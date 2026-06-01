@@ -821,7 +821,7 @@ let dateFrom='', dateTo='', activeDateQuick='all';
 // ─── HELPERS ───────────────────────────────────────────────────────────────
 // Safe cardholder lookup — never crashes if card missing from H
 const ch  = card => H[card] || {name:'Unknown',init:'??',col:'#8B9CB8',bg:'#18202E',role:'Cardholder'};
-const fmt = n => '$'+parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt = n => '$'+parseFloat((n||0).toString().replace(/[^0-9.-]/g,'')||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const comp= t => [t.pu, t.pr, (t.rc||t.rc_url), t.no].filter(Boolean).length;
 const av  = (card,sz=36) => {
   const h=ch(card);
