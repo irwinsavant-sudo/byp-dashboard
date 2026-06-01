@@ -1645,19 +1645,20 @@ function applyDot(id, state){
 // Worst-case state across a list of WF keys.
 // Priority: err > warn(edited+inactive) > off(inactive) > on(active)
 function _worstState(wfKeys){
-  const priority={err:4,warn:3,off:2,on:1};
-  let worst='off';
-  wfKeys.forEach(key=>{
-    const wf=_wfLive[key];
+  let hasOn = false;
+  let hasWarn = false;
+  let hasErr = false;
+  wfKeys.forEach(key => {
+    const wf = _wfLive[key];
     if(!wf) return;
-    let s;
-    if(wf.err)         s='err';
-    else if(wf.active) s='on';
-    else if(wf.warn)   s='warn';
-    else               s='off';
-    if((priority[s]||0)>(priority[worst]||0)) worst=s;
+    if(wf.err)         hasErr  = true;
+    else if(wf.active) hasOn   = true;
+    else if(wf.warn)   hasWarn = true;
   });
-  return worst;
+  if(hasErr)  return 'err';
+  if(hasWarn) return 'warn';
+  if(hasOn)   return 'on';
+  return 'off';
 }
 
 // Derive header sysdots + Live badge from _wfLive.
