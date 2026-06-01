@@ -1651,10 +1651,10 @@ function _worstState(wfKeys){
     const wf=_wfLive[key];
     if(!wf) return;
     let s;
-    if(wf.err)          s='err';
-    else if(wf.active)  s='on';
-    else if(wf.edited)  s='warn';
-    else                s='off';
+    if(wf.err)         s='err';
+    else if(wf.active) s='on';
+    else if(wf.warn)   s='warn';
+    else               s='off';
     if((priority[s]||0)>(priority[worst]||0)) worst=s;
   });
   return worst;
@@ -1727,16 +1727,18 @@ async function pollN8nStatus(){
   const keyToNum={WF1:1,WF2:2,WF3:3,WF4:4,WF5:5,WF6:6};
   Object.entries(wfs).forEach(([key,wf])=>{
     const n=keyToNum[key];if(!n) return;
-    _wfLive[key]={active:!!wf.active, edited:!!wf.edited, err:!!wf.err};
+    // active=true → green, active=false+id found → warn (edited/inactive), active=null → off, err → red
+    const isWarn = wf.active === false && wf.id !== null;
+    _wfLive[key]={active:!!wf.active, warn:isWarn, err:!!wf.err};
     let dotState;
-    if(wf.err)          dotState='err';
-    else if(wf.active)  dotState='on';
-    else if(wf.edited)  dotState='warn';
-    else                dotState='off';
+    if(wf.err)         dotState='err';
+    else if(wf.active) dotState='on';
+    else if(isWarn)    dotState='warn';
+    else               dotState='off';
     applyDot(`dot-wf${n}`, dotState);
   });
   const allActive=Object.values(wfs).every(w=>w.active===true);
-  const anyEdited=Object.values(wfs).some(w=>w.edited===true&&!w.active);
+  const anyEdited=Object.values(wfs).some(w=>w.active===false&&w.id!==null);
   const anyErr   =Object.values(wfs).some(w=>w.err===true);
   const headerState=anyErr?'err':allActive?'on':anyEdited?'warn':'off';
   applyDot('dot-workflow',headerState);
