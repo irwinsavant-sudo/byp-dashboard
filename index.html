@@ -287,6 +287,12 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .statgrid{grid-template-columns:1fr 1fr}
   .txnitem{grid-template-columns:36px 1fr 90px}
 }
+
+/* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
+.dr-input{width:100%;background:var(--s3);border:1px solid var(--bdr2);border-radius:6px;color:var(--t1);padding:7px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.dr-input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 2px var(--amberRing)}
+.dr-input::placeholder{color:var(--t3)}
+.dr-input option,.dr-input optgroup{background:var(--s3);color:var(--t1)}
 </style>
 </head>
 <body>
@@ -537,7 +543,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
     <table class="stbl" aria-label="Transaction status sheet">
       <thead><tr>
         <th>Date</th><th>Cardholder</th><th>Card</th><th>Merchant</th><th style="text-align:right">Amount</th>
-        <th>Purpose</th><th>Project</th><th>Category</th>
+        <th>Purpose</th><th>Project</th><th>Account Category</th>
         <th style="text-align:center" aria-label="Receipt uploaded">Receipt</th>
         <th style="text-align:center" aria-label="Notes added">Notes</th>
         <th>Status</th><th>Progress</th>
@@ -659,6 +665,9 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
       <button class="btn" id="proj-sheets-btn" onclick="openProjectsSheet()">
         <i class="ti ti-table" aria-hidden="true"></i> Open in Sheets
       </button>
+      <button class="btn" id="proj-sync-btn" onclick="syncProjectsFromSheets()" title="Pull latest project list from Google Sheets">
+        <i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets
+      </button>
       <button class="btn btn-amber" onclick="toggleAddForm()">
         <i class="ti ti-plus" aria-hidden="true"></i> Add Project
       </button>
@@ -767,7 +776,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 // TX field names (must match WF-1 Code: Build HTML Data Payload output):
 //   id, c (card_last4), dt (date), tm (time), m (merchant),
 //   a (amount), st (status), pu (purpose), pr (project),
-//   rc (receipt bool), rc_url (receipt URL), no (notes), sl (slack thread)
+//   ac (account_category), rc (receipt bool), rc_url (receipt URL),
+//   no (notes), sl (slack thread)
 //
 // See SETUP_CHECKLIST.md Step 12 for required WF-1 Code node changes.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -792,6 +802,72 @@ let TX = [];
 // DATA:PROJECTS:START
 let PROJECTS = [];
 // DATA:PROJECTS:END
+
+// ── Chart of Accounts — two categories: Accounts (expenses) + Products & Services ──
+// Source of truth: ChartOfAccounts tab in BYP Projects spreadsheet.
+// Update here if the chart of accounts changes, then redeploy.
+const CHART_OF_ACCOUNTS = [
+  // Accounts (Expenses)
+  '7010 Advertising:Advertising - Meta/Facebook',
+  '7020 Advertising:Advertising - Google',
+  '7030 Advertising:Advertising - Other',
+  '7210 Rent & Lease:Rent & Lease - Warehouse / Office',
+  '7220 Utilities:Utilities - Warehouse / Office',
+  '7230 Repairs & Maintenance:Repairs & Maintenance - Building',
+  '7240 Warehouse Supplies / Small Equipment',
+  '7340 Vehicle Stipends / Allowances',
+  '7360 Travel:Travel and Lodging',
+  '7370 Travel:Travel - Meals',
+  '7380 Mileage Reimbursement',
+  '7410 Office Supplies',
+  '7420 Software & Subscriptions',
+  '7430 Insurance:Insurance - General Liability / Umbrella',
+  '7440 Professional Fees:Professional Fees - Accounting / Bookkeeping',
+  '7450 Professional Fees:Professional Fees - Legal',
+  '7460 Professional Fees:Professional Fees - Other Consulting',
+  '7470 HR / Recruiting / Training',
+  '7480 Taxes & Licenses',
+  '7490 Bank Fees',
+  '7495 Merchant Fees (Stripe/QB Payments)',
+  '7610 Customer Gifts',
+  '7620 Employee Recognition',
+  '7630 Meals & Entertainment (non-travel)',
+  '7640 Uncategorized Expenses (Temp)',
+  '7250 Rent & Lease Forklift',
+  '7300 Vehicles, Travel, and Field Support',
+  '7310 Fuel',
+  '7320 Vehicle Repairs & Maintenance',
+  '7330 Vehicle Insurance & Registration',
+  '7350 Tolls / Parking',
+  // Products & Services (COGS)
+  '5010 COGS (Parent):COGS Direct Labor – Primary Installer / Turnkey Residential Essentials',
+  '5011 COGS (Parent):COGS Direct Labor – Primary Installer / Turnkey Residential Living and Villas',
+  '5020 COGS (Parent):COGS Direct Labor – Primary Installer / Turnkey Commercial',
+  '5030 COGS:COGS Direct Labor – Overtime / Premium Pay',
+  '5110 COGS:COGS Residential Subcontractors – Electrical - Essentials',
+  '5111 COGS:COGS Residential Subcontractors – Electrical - Living/Villas',
+  '5120 COGS:COGS Residential Subcontractors – Plumbing',
+  '5130 COGS:COGS Residential Subcontractors – HVAC',
+  '5140 COGS:COGS Residential Subcontractors – Concrete / Foundation',
+  '5150 COGS:COGS Residential Subcontractors – Excavation / Trenching',
+  '5160 COGS:COGS Residential Subcontractors – Landscaping / Flatwork / Yard',
+  '5170 COGS:COGS Residential Subcontractors – Cleaning / Final Clean',
+  '5180 COGS:COGS Residential Subcontractors – Other Trades',
+  '5190 COGS (Parent):COGS Commercial Subcontractors – All',
+  '5210 COGS:COGS Materials – Pod Build Materials - Residential Essentials',
+  '5211 COGS:COGS Materials – Pod Build Materials - Residential Living and Villas',
+  '5220 COGS:COGS Materials – Pod Build Materials - Commercial',
+  '5310 COGS:COGS Permit Fees',
+  '5320 COGS:COGS Engineering',
+  '5330 COGS:COGS Architecture / Drafting (job-specific)',
+  '5340 COGS:COGS Survey / Soil / Testing',
+  '5410 COGS:COGS Equipment Rental (jobsite)',
+  '5420 COGS:COGS Dump / Hauling / Disposal',
+  '5430 COGS:COGS Porta Potty / Jobsite Services',
+  '5440 COGS:COGS Temporary Power / Water / Site Utilities',
+  '5450 COGS:COGS Small Tools & Consumables (jobsite)',
+  '5460 COGS:COGS Warranty & Callbacks',
+];
 
 // ── Last sync timestamp (injected by WF-1; used for auto-refresh polling) ───
 // DATA:SYNC_TS:START
@@ -821,16 +897,9 @@ let dateFrom='', dateTo='', activeDateQuick='all';
 // ─── HELPERS ───────────────────────────────────────────────────────────────
 // Safe cardholder lookup — never crashes if card missing from H
 const ch  = card => H[card] || {name:'Unknown',init:'??',col:'#8B9CB8',bg:'#18202E',role:'Cardholder'};
-
-// esc() — HTML-escape any value before inserting into innerHTML.
-// All data coming from Google Sheets goes through this to prevent XSS.
-// A merchant name or note containing <script> or onerror= would otherwise
-// execute with access to the webhook secrets embedded in this page's JS scope.
-const esc = v => String(v == null ? '' : v)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const fmt = n => '$'+parseFloat((n||0).toString().replace(/[^0-9.-]/g,'')||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const comp= t => [t.pu, t.pr, (t.rc||t.rc_url), t.no].filter(Boolean).length;
+const comp= t => [t.pu, t.pr, t.ac, (t.rc||t.rc_url), t.no].filter(Boolean).length;
+const COMP_TOTAL = 5; // purpose, project, account_category, receipt, notes
 const av  = (card,sz=36) => {
   const h=ch(card);
   return `<div class="av" style="width:${sz}px;height:${sz}px;background:${h.bg};color:${h.col};font-size:${Math.round(sz*.31)}px" aria-hidden="true">${h.init}</div>`;
@@ -1059,6 +1128,31 @@ function showUnsavedBadge(show){
   if(b) b.style.display = show ? '' : 'none';
 }
 
+async function syncProjectsFromSheets(){
+  const btn=document.getElementById('proj-sync-btn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader spin" aria-hidden="true"></i> Syncing…';}
+  if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')){
+    toast('Not configured','DASHBOARD_DATA_URL not set — deploy first','info');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets';}
+    return;
+  }
+  // Derive /projects URL from DASHBOARD_DATA_URL (replace /dashboard-data with /projects)
+  const projUrl=DASHBOARD_DATA_URL.replace(/\/dashboard-data.*$/,'/projects');
+  try{
+    const r=await fetch(projUrl+'?_nc='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    PROJECTS=d.projects||[];
+    buildProjects();
+    toast('Projects synced',`${PROJECTS.length} project${PROJECTS.length!==1?'s':''} loaded from Google Sheets`,'success');
+  }catch(e){
+    toast('Sync failed','Could not load projects: '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets';}
+  }
+}
+
 function openProjectsSheet(){
   if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!==''){
     window.open(PROJECTS_SHEET_URL, '_blank');
@@ -1096,10 +1190,10 @@ function buildList(){
     <div class="txnitem${selId===t.id?' sel':''}" onclick="sel('${t.id}')" role="listitem button" tabindex="0" aria-selected="${selId===t.id}">
       ${av(t.c,36)}
       <div>
-        <div class="merchant">${esc(t.m)}</div>
-        <div class="txnmeta">••••${esc(t.c)} · ${esc(ch(t.c).name)} · ${esc(t.tm||'')}</div>
+        <div class="merchant">${t.m}</div>
+        <div class="txnmeta">••••${t.c} · ${ch(t.c).name} · ${t.tm||''}</div>
       </div>
-      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${esc(t.dt)}</div></div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
       <div>${badge(t.st)}</div>
     </div>`).join('');
   el.querySelectorAll('.txnitem').forEach(r=>r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click();}}));
@@ -1112,39 +1206,83 @@ function buildDetail(){
   if(!selId){de.innerHTML='<div class="dempty"><i class="ti ti-cursor-text"></i><span>Select a transaction</span></div>';return;}
   const t=TX.find(x=>x.id===selId);
   if(!t){de.innerHTML='';return;}
-  const h=ch(t.c), c=comp(t), p=Math.round(c/4*100);
-  // Receipt: support bool rc AND string rc_url (live data from n8n)
+  const h=ch(t.c), c=comp(t), p=Math.round(c/COMP_TOTAL*100);
   const hasRc = !!(t.rc||t.rc_url);
   const rcVal = t.rc_url
     ? `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal)">View receipt ↗</a>`
     : (hasRc ? 'Uploaded ✓' : '');
   const isPushed = t.st==='pushed';
+  // Build project options for dropdown
+  const projOpts = PROJECTS.filter(p=>p.active!==false).map(p=>
+    `<option value="${p.name}"${t.pr===p.name?' selected':''}>${p.name}</option>`).join('');
+  // Build account category options — grouped to match Slack modal
+  const acOptsAccounts = CHART_OF_ACCOUNTS
+    .filter(a=>/^7\d{3}/.test(a))
+    .map(a=>`<option value="${a}"${t.ac===a?' selected':''}>${a}</option>`).join('');
+  const acOptsCOGS = CHART_OF_ACCOUNTS
+    .filter(a=>/^5\d{3}/.test(a))
+    .map(a=>`<option value="${a}"${t.ac===a?' selected':''}>${a}</option>`).join('');
+  const acOpts = `<optgroup label="Accounts">${acOptsAccounts}</optgroup><optgroup label="Products &amp; Services">${acOptsCOGS}</optgroup>`;
   de.innerHTML=`
   <div class="dsec">
     <div style="display:flex;align-items:center;gap:12px">
       ${av(t.c,44)}
-      <div style="flex:1"><div style="font-size:15px;font-weight:700">${esc(h.name)}</div><div style="font-size:11px;color:var(--t3)">${esc(h.role)} · Card ••••${esc(t.c)} · ${esc(t.id)}</div></div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:700">${h.name}</div><div style="font-size:11px;color:var(--t3)">${h.role} · Card ••••${t.c} · ${t.id}</div></div>
       ${badge(t.st)}
     </div>
   </div>
   <div class="dsec">
     <div class="dlbl">Transaction details</div>
     <div class="dgrid2">
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Merchant</div><div style="font-weight:600;font-size:13px">${esc(t.m)}</div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Merchant</div><div style="font-weight:600;font-size:13px">${t.m}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Amount</div><div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber)">${fmt(t.a)}</div></div>
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${esc(t.dt)}${t.tm?' · '+esc(t.tm):''}</div></div>
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Filing progress</div><div style="font-size:12px;font-weight:600">${c}/4 fields</div><div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Filing progress</div><div style="font-size:12px;font-weight:600">${c}/${COMP_TOTAL} fields</div><div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div></div>
     </div>
   </div>
   <div class="dsec">
-    <div class="dlbl">Cardholder responses</div>
-    <div style="background:var(--s2);border-radius:8px;padding:2px 12px">
-      ${[['Purpose',t.pu],['Project',t.pr],['Receipt',rcVal],['Notes',t.no]].map(([n,v])=>`
-      <div class="dfield">
-        <span class="dfname">${esc(n)}</span>
-        <span class="dfval" style="color:${v?'var(--t1)':'var(--t3)'}">${v===rcVal ? (v||'Awaiting via Slack…') : (esc(v)||'Awaiting via Slack…')}</span>
-        ${ci(v)}
-      </div>`).join('')}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="dlbl" style="margin-bottom:0">Cardholder responses</div>
+      <span style="font-size:11px;color:var(--t3)">Editable — saves to Google Sheets</span>
+    </div>
+    <div style="background:var(--s2);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">PURPOSE</div>
+        <input id="dr-purpose" type="text" value="${t.pu||''}" placeholder="e.g. Roof materials, Lumber…"
+          class="dr-input"
+          onblur="saveField('${t.id}','purpose',this.value,'pu')">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">PROJECT</div>
+        <select id="dr-project" class="dr-input" style="color-scheme:dark"
+          onchange="saveField('${t.id}','project',this.value,'pr')">
+          <option value="">— Select project —</option>
+          ${projOpts}
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">ACCOUNT CATEGORY</div>
+        <select id="dr-accat" class="dr-input" style="color-scheme:dark"
+          onchange="saveField('${t.id}','account_category',this.value,'ac')">
+          <option value="">— Select account category —</option>
+          ${acOpts}
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">RECEIPT</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${rcVal
+            ? `<span style="font-size:12px;color:var(--teal)">${rcVal}</span>`
+            : `<span style="font-size:12px;color:var(--t3)">No receipt uploaded yet</span>`}
+          <span style="font-size:11px;color:var(--t3);font-style:italic">Uploaded via Slack</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">NOTES</div>
+        <textarea id="dr-notes" rows="2" placeholder="Any additional context…"
+          class="dr-input" style="resize:vertical"
+          onblur="saveField('${t.id}','notes',this.value,'no')">${t.no||''}</textarea>
+      </div>
     </div>
   </div>
   <div class="dsec">
@@ -1167,6 +1305,35 @@ function buildDetail(){
   </div>`;
 }
 function resend(id){const t=TX.find(x=>x.id===id);toast('Slack','Reminder sent to '+ch(t.c).name+' via n8n → Slack','info');}
+
+// ─── SAVE FIELD (inline cardholder response edit) ────────────────────────────
+async function saveField(txnId, field, value, txField){
+  const t=TX.find(x=>x.id===txnId);
+  if(!t) return;
+  const prev=t[txField];
+  if(value===prev||(value===''&&!prev)) return; // no change
+  t[txField]=value;
+  updStats();buildSheet();buildRecent();buildAttention();
+  if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
+  try{
+    const r=await fetch(DASHBOARD_DATA_URL,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+      body:JSON.stringify({txn_id:txnId, field, value})
+    });
+    const d=await r.json();
+    if(!r.ok||d.error){
+      t[txField]=prev;
+      toast('Sync failed',d.error||'Could not update sheet','error');
+    } else {
+      toast('Saved',`${field.replace(/_/g,' ')} updated`,'success');
+    }
+  }catch(e){
+    t[txField]=prev;
+    toast('Sync failed','Network error: '+e.message,'error');
+  }
+}
+
 async function markDone(id){
   const t=TX.find(x=>x.id===id);
   if(!t||t.st==='pushed') return;
@@ -1229,27 +1396,28 @@ function buildSheet(){
   const done=rows.filter(t=>t.st==='complete'||t.st==='pushed').length;
 
   tb.innerHTML=rows.length ? rows.map(t=>{
-    const h=ch(t.c), c=comp(t), p=Math.round(c/4*100);
+    const h=ch(t.c), c=comp(t);
     const hasRc=!!(t.rc||t.rc_url);
     const rcCell=t.rc_url
       ? `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:none">View ↗</a>`
       : ci(hasRc);
     const rb=t.st==='pushed'?'rgba(16,185,129,.03)':t.st==='complete'?'rgba(16,185,129,.05)':t.st==='partial'?'rgba(245,158,11,.04)':'';
+    const pct=Math.round(c/COMP_TOTAL*100);
     return `<tr style="${rb?'background:'+rb:''}">
-      <td class="mono" style="font-size:11px;white-space:nowrap">${esc(t.dt)}</td>
-      <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${esc(h.name)}</span></div></td>
-      <td class="mono" style="font-size:11px;color:var(--t3)">••••${esc(t.c)}</td>
-      <td style="max-width:130px;font-size:12px">${esc(t.m)}</td>
+      <td class="mono" style="font-size:11px;white-space:nowrap">${t.dt}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${h.name}</span></div></td>
+      <td class="mono" style="font-size:11px;color:var(--t3)">••••${t.c}</td>
+      <td style="max-width:130px;font-size:12px">${t.m}</td>
       <td class="mono" style="text-align:right;font-weight:700">${fmt(t.a)}</td>
-      <td style="color:${t.pu?'var(--t1)':'var(--t3)'};">${esc(t.pu)||'—'}</td>
-      <td style="color:${t.pr?'var(--t1)':'var(--t3)'};">${esc(t.pr)||'—'}</td>
-      <td style="color:${t.ac?'var(--t1)':'var(--t3)'};">${esc(t.ac)||'—'}</td>
+      <td style="color:${t.pu?'var(--t1)':'var(--t3)'};">${t.pu||'—'}</td>
+      <td style="color:${t.pr?'var(--t1)':'var(--t3)'};">${t.pr||'—'}</td>
+      <td style="color:${t.ac?'var(--t1)':'var(--t3)'};">${t.ac||'—'}</td>
       <td style="text-align:center">${rcCell}</td>
       <td style="text-align:center">${ci(t.no)}</td>
       <td>${badge(t.st)}</td>
       <td style="min-width:90px">
-        <div style="font-size:10px;color:var(--t3);margin-bottom:3px">${c}/4</div>
-        <div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:3px">${c}/${COMP_TOTAL}</div>
+        <div class="prog"><div class="progfill" style="width:${pct}%;background:${pcolor(pct)}"></div></div>
       </td>
     </tr>`;
   }).join('') : `<tr><td colspan="12" style="text-align:center;padding:28px;color:var(--t3);font-size:12px">No transactions for the selected date range</td></tr>`;
@@ -1275,10 +1443,10 @@ function openQB(){
   document.getElementById('qb-list').innerHTML=eligible.length
     ? eligible.map(t=>`
       <div class="modal-listrow">
-        <div style="display:flex;align-items:center;gap:10px">${av(t.c,28)}<span style="font-weight:500">${esc(t.m)}</span></div>
+        <div style="display:flex;align-items:center;gap:10px">${av(t.c,28)}<span style="font-weight:500">${t.m}</span></div>
         <div style="text-align:right">
           <div style="font-family:'JetBrains Mono',monospace;font-weight:700">${fmt(t.a)}</div>
-          <div style="font-size:11px;color:var(--t3)">${esc(t.dt)}${t.pr?' · '+esc(t.pr):''}</div>
+          <div style="font-size:11px;color:var(--t3)">${t.dt}${t.pr?' · '+t.pr:''}</div>
         </div>
       </div>`).join('')
     : `<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No complete transactions${hasRange?' for the selected dates':''}</div>`;
@@ -1359,8 +1527,8 @@ function buildHolders(){
       <div class="holderhdr">
         ${av(card,46)}
         <div style="flex:1">
-          <div style="font-size:16px;font-weight:700">${esc(h.name)}</div>
-          <div style="font-size:12px;color:var(--t3)">${esc(h.role||'Cardholder')} · Card ••••${esc(card)}</div>
+          <div style="font-size:16px;font-weight:700">${h.name}</div>
+          <div style="font-size:12px;color:var(--t3)">${h.role||'Cardholder'} · Card ••••${card}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${rate===100?'var(--teal)':rate>=50?'var(--amber)':'var(--blue)'}">${rate}%</div>
@@ -1379,7 +1547,7 @@ function buildHolders(){
       <div class="prog" style="height:5px;margin-bottom:14px"><div class="progfill" style="width:${rate}%;background:${rate===100?'var(--teal)':rate>=50?'var(--amber)':'var(--blue)'}"></div></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-sm" style="flex:1;justify-content:center" onclick="filt('${card}',null);go('feed');">View txns</button>
-        ${pend>0?`<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" onclick="toast('Slack','Reminder sent to ${esc(h.name)} for ${pend} pending txn${pend>1?'s':''}','info')">Remind</button>`:''}
+        ${pend>0?`<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" onclick="toast('Slack','Reminder sent to ${h.name} for ${pend} pending txn${pend>1?'s':''}','info')">Remind</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1393,8 +1561,8 @@ function buildRecent(){
   el.innerHTML=recent.map(t=>`
     <div class="txnitem" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0" style="cursor:pointer">
       ${av(t.c,32)}
-      <div><div class="merchant" style="font-size:12px">${esc(t.m)}</div><div class="txnmeta">${esc(ch(t.c).name)} · ${esc(t.tm||'')}</div></div>
-      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${esc(t.dt)}</div></div>
+      <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name} · ${t.tm||''}</div></div>
+      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
       <div>${badge(t.st)}</div>
     </div>`).join('');
 }
@@ -1405,7 +1573,7 @@ function buildAttention(){
   el.innerHTML=pend.map(t=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0">
       ${av(t.c,28)}
-      <div style="flex:1"><div style="font-size:12px;font-weight:600">${esc(t.m)}</div><div style="font-size:11px;color:var(--t3)">${esc(ch(t.c).name)} · ${fmt(t.a)}</div></div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.m}</div><div style="font-size:11px;color:var(--t3)">${ch(t.c).name} · ${fmt(t.a)}</div></div>
       ${badge(t.st)}
     </div>`).join('');
 }
@@ -1413,11 +1581,11 @@ function buildAttention(){
 // ─── EXPORT (real CSV download) ───────────────────────────────────────────────
 function doExport(){
   const btn=document.getElementById('export-btn');
-  const headers=['Date','Cardholder','Card','Merchant','Amount','Purpose','Project','Receipt','Receipt URL','Notes','Status'];
+  const headers=['Date','Cardholder','Card','Merchant','Amount','Purpose','Project','Account Category','Receipt','Receipt URL','Notes','Status'];
   const rows=TX.map(t=>{
     const h=ch(t.c);
     return [t.dt,h.name,'••••'+t.c,t.m,parseFloat(t.a||0).toFixed(2),
-            t.pu||'',t.pr||'',(t.rc||t.rc_url)?'Yes':'No',
+            t.pu||'',t.pr||'',t.ac||'',(t.rc||t.rc_url)?'Yes':'No',
             t.rc_url||'',t.no||'',t.st];
   });
   const csv=[headers,...rows].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -1775,13 +1943,6 @@ async function loadDashboardData(silent=false){
       return;
     }
 
-    // Capture previous state BEFORE overwriting TX — required for the
-    // "new transactions arrived" toast comparison below. The old code
-    // assigned TX first, then compared d.count > TX.length, which was
-    // always false because TX.length already equalled d.count.
-    const prevCount  = TX.length;
-    const prevSyncTs = _lastSyncTs;
-
     // Populate global TX and H, then re-render everything
     TX=d.transactions||[];
     const newH=d.cardholders||{};
@@ -1803,13 +1964,11 @@ async function loadDashboardData(silent=false){
     const wfLbl=document.getElementById('dot-workflow-lbl');
     if(wfLbl&&TX.length) wfLbl.textContent=`Active — ${TX.length} txns, ${Object.keys(H).length} cards`;
 
-    // Toast only on first load or when new transactions arrive.
-    // Compare against prevCount (captured before TX was overwritten) and
-    // prevSyncTs (captured before _lastSyncTs was updated).
-    if(d.syncTs&&d.syncTs!==prevSyncTs){
-      if(prevSyncTs&&d.count>prevCount){
+    // Toast only on first load or when new transactions arrive
+    if(d.syncTs&&d.syncTs!==_lastSyncTs){
+      if(_lastSyncTs&&d.count>TX.length){
         toast('New transactions','Dashboard updated with latest Plaid data','success');
-      } else if(!prevSyncTs&&!silent){
+      } else if(!_lastSyncTs&&!silent){
         toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
       }
       _lastSyncTs=d.syncTs;
@@ -1833,6 +1992,14 @@ initSysStatus();
 // Load live transaction data from Cloudflare Worker → Google Sheets
 // initCharts() runs inside loadDashboardData() after data is available
 loadDashboardData(false);
+// Auto-sync projects from Sheets on load (silent — no toast on success)
+if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
+  const _projUrl=DASHBOARD_DATA_URL.replace(/\/dashboard-data.*$/,'/projects');
+  fetch(_projUrl+'?_nc='+Date.now(),{cache:'no-store'})
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{if(d&&d.projects){PROJECTS=d.projects;buildProjects();}})
+    .catch(()=>{});
+}
 </script>
 </body>
 </html>
