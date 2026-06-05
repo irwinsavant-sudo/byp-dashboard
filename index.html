@@ -86,16 +86,17 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 
 /* ── PANEL ───────────────────────────── */
 .panel{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.panel.of-visible{overflow:visible}
 .pnhdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--bdr)}
 .pntitle{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--t1)}
 
 /* ── BADGES ──────────────────────────── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600}
-.badge-pending  {background:var(--blueDim);color:var(--blue)}
-.badge-notified {background:rgba(96,165,250,.08);color:#93C5FD;border:1px solid rgba(96,165,250,.2)}
-.badge-partial  {background:var(--amberDim);color:var(--amber)}
-.badge-complete {background:var(--tealDim);color:var(--teal)}
-.badge-pushed   {background:rgba(16,185,129,.06);color:#6EE7B7;border:1px solid rgba(16,185,129,.18)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.02em}
+.badge-pending  {background:rgba(96,165,250,.18);color:#93C5FD;border:1px solid rgba(96,165,250,.35)}
+.badge-notified {background:rgba(96,165,250,.10);color:#BAD4FC;border:1px solid rgba(96,165,250,.25)}
+.badge-partial  {background:rgba(245,158,11,.22);color:#FCD34D;border:1px solid rgba(245,158,11,.45)}
+.badge-complete {background:rgba(16,185,129,.20);color:#6EE7B7;border:1px solid rgba(16,185,129,.40)}
+.badge-pushed   {background:rgba(16,185,129,.08);color:#6EE7B7;border:1px solid rgba(16,185,129,.22)}
 .badge-new      {background:rgba(139,92,246,.2);color:#A78BFA}
 .badge-overdue  {background:var(--redDim);color:var(--red)}
 
@@ -287,6 +288,12 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .statgrid{grid-template-columns:1fr 1fr}
   .txnitem{grid-template-columns:36px 1fr 90px}
 }
+
+/* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
+.dr-input{width:100%;background:var(--s3);border:1px solid var(--bdr2);border-radius:6px;color:var(--t1);padding:7px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.dr-input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 2px var(--amberRing)}
+.dr-input::placeholder{color:var(--t3)}
+.dr-input option,.dr-input optgroup{background:var(--s3);color:var(--t1)}
 </style>
 </head>
 <body>
@@ -433,7 +440,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
     </div>
   </div>
   <div class="feedlayout">
-    <div class="panel">
+    <div class="panel of-visible">
       <div class="pnhdr">
         <div class="pntitle"><i class="ti ti-list" aria-hidden="true"></i> Transactions</div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -536,8 +543,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   <div class="panel" style="overflow-x:auto">
     <table class="stbl" aria-label="Transaction status sheet">
       <thead><tr>
-        <th>Date</th><th>Cardholder</th><th>Merchant</th><th style="text-align:right">Amount</th>
-        <th>Purpose</th><th>Project</th>
+        <th>Date</th><th>Cardholder</th><th>Card</th><th>Merchant</th><th style="text-align:right">Amount</th>
+        <th>Purpose</th><th>Project</th><th>Account Category</th>
         <th style="text-align:center" aria-label="Receipt uploaded">Receipt</th>
         <th style="text-align:center" aria-label="Notes added">Notes</th>
         <th>Status</th><th>Progress</th>
@@ -659,6 +666,9 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
       <button class="btn" id="proj-sheets-btn" onclick="openProjectsSheet()">
         <i class="ti ti-table" aria-hidden="true"></i> Open in Sheets
       </button>
+      <button class="btn" id="proj-sync-btn" onclick="syncProjectsFromSheets()" title="Pull latest project list from Google Sheets">
+        <i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets
+      </button>
       <button class="btn btn-amber" onclick="toggleAddForm()">
         <i class="ti ti-plus" aria-hidden="true"></i> Add Project
       </button>
@@ -767,7 +777,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 // TX field names (must match WF-1 Code: Build HTML Data Payload output):
 //   id, c (card_last4), dt (date), tm (time), m (merchant),
 //   a (amount), st (status), pu (purpose), pr (project),
-//   rc (receipt bool), rc_url (receipt URL), no (notes), sl (slack thread)
+//   ac (account_category), rc (receipt bool), rc_url (receipt URL),
+//   no (notes), sl (slack thread)
 //
 // See SETUP_CHECKLIST.md Step 12 for required WF-1 Code node changes.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -793,6 +804,72 @@ let TX = [];
 let PROJECTS = [];
 // DATA:PROJECTS:END
 
+// ── Chart of Accounts — two categories: Accounts (expenses) + Products & Services ──
+// Source of truth: ChartOfAccounts tab in BYP Projects spreadsheet.
+// Update here if the chart of accounts changes, then redeploy.
+const CHART_OF_ACCOUNTS = [
+  // Accounts (Expenses)
+  '7010 Advertising:Advertising - Meta/Facebook',
+  '7020 Advertising:Advertising - Google',
+  '7030 Advertising:Advertising - Other',
+  '7210 Rent & Lease:Rent & Lease - Warehouse / Office',
+  '7220 Utilities:Utilities - Warehouse / Office',
+  '7230 Repairs & Maintenance:Repairs & Maintenance - Building',
+  '7240 Warehouse Supplies / Small Equipment',
+  '7340 Vehicle Stipends / Allowances',
+  '7360 Travel:Travel and Lodging',
+  '7370 Travel:Travel - Meals',
+  '7380 Mileage Reimbursement',
+  '7410 Office Supplies',
+  '7420 Software & Subscriptions',
+  '7430 Insurance:Insurance - General Liability / Umbrella',
+  '7440 Professional Fees:Professional Fees - Accounting / Bookkeeping',
+  '7450 Professional Fees:Professional Fees - Legal',
+  '7460 Professional Fees:Professional Fees - Other Consulting',
+  '7470 HR / Recruiting / Training',
+  '7480 Taxes & Licenses',
+  '7490 Bank Fees',
+  '7495 Merchant Fees (Stripe/QB Payments)',
+  '7610 Customer Gifts',
+  '7620 Employee Recognition',
+  '7630 Meals & Entertainment (non-travel)',
+  '7640 Uncategorized Expenses (Temp)',
+  '7250 Rent & Lease Forklift',
+  '7300 Vehicles, Travel, and Field Support',
+  '7310 Fuel',
+  '7320 Vehicle Repairs & Maintenance',
+  '7330 Vehicle Insurance & Registration',
+  '7350 Tolls / Parking',
+  // Products & Services (COGS)
+  '5010 COGS (Parent):COGS Direct Labor – Primary Installer / Turnkey Residential Essentials',
+  '5011 COGS (Parent):COGS Direct Labor – Primary Installer / Turnkey Residential Living and Villas',
+  '5020 COGS (Parent):COGS Direct Labor – Primary Installer / Turnkey Commercial',
+  '5030 COGS:COGS Direct Labor – Overtime / Premium Pay',
+  '5110 COGS:COGS Residential Subcontractors – Electrical - Essentials',
+  '5111 COGS:COGS Residential Subcontractors – Electrical - Living/Villas',
+  '5120 COGS:COGS Residential Subcontractors – Plumbing',
+  '5130 COGS:COGS Residential Subcontractors – HVAC',
+  '5140 COGS:COGS Residential Subcontractors – Concrete / Foundation',
+  '5150 COGS:COGS Residential Subcontractors – Excavation / Trenching',
+  '5160 COGS:COGS Residential Subcontractors – Landscaping / Flatwork / Yard',
+  '5170 COGS:COGS Residential Subcontractors – Cleaning / Final Clean',
+  '5180 COGS:COGS Residential Subcontractors – Other Trades',
+  '5190 COGS (Parent):COGS Commercial Subcontractors – All',
+  '5210 COGS:COGS Materials – Pod Build Materials - Residential Essentials',
+  '5211 COGS:COGS Materials – Pod Build Materials - Residential Living and Villas',
+  '5220 COGS:COGS Materials – Pod Build Materials - Commercial',
+  '5310 COGS:COGS Permit Fees',
+  '5320 COGS:COGS Engineering',
+  '5330 COGS:COGS Architecture / Drafting (job-specific)',
+  '5340 COGS:COGS Survey / Soil / Testing',
+  '5410 COGS:COGS Equipment Rental (jobsite)',
+  '5420 COGS:COGS Dump / Hauling / Disposal',
+  '5430 COGS:COGS Porta Potty / Jobsite Services',
+  '5440 COGS:COGS Temporary Power / Water / Site Utilities',
+  '5450 COGS:COGS Small Tools & Consumables (jobsite)',
+  '5460 COGS:COGS Warranty & Callbacks',
+];
+
 // ── Last sync timestamp (injected by WF-1; used for auto-refresh polling) ───
 // DATA:SYNC_TS:START
 const SYNC_TS = '';
@@ -809,7 +886,7 @@ const QB_PUSH_SECRET          = '0ad2dbb851b04552f4bb3ec34a402abd833905fa6646575
 const SHEETS_URL              = 'https://docs.google.com/spreadsheets/d/1lM3WMabIbzWc9s5pWv9qkMBn5SVaCPe8AYKeHwxegUg/edit';
 const PROJECTS_WEBHOOK_URL    = 'https://n8n-space.byp-app.workers.dev/webhook/projects';
 const PROJECTS_WEBHOOK_SECRET = '61fffb85d3926299c5113f1e6a6cc10cde0092c18681ea6f7681132f0d411a17';
-const PROJECTS_SHEET_URL      = '';
+const PROJECTS_SHEET_URL      = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0';
 const N8N_STATUS_URL          = 'https://n8n-space.byp-app.workers.dev/workflow-status';
 const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard-data'; // Worker /dashboard-data endpoint
 const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa'; // shared secret for write-back
@@ -822,7 +899,8 @@ let dateFrom='', dateTo='', activeDateQuick='all';
 // Safe cardholder lookup — never crashes if card missing from H
 const ch  = card => H[card] || {name:'Unknown',init:'??',col:'#8B9CB8',bg:'#18202E',role:'Cardholder'};
 const fmt = n => '$'+parseFloat((n||0).toString().replace(/[^0-9.-]/g,'')||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const comp= t => [t.pu, t.pr, (t.rc||t.rc_url), t.no].filter(Boolean).length;
+const comp= t => [t.pu, t.pr, t.ac, (t.rc||t.rc_url), t.no].filter(Boolean).length;
+const COMP_TOTAL = 5; // purpose, project, account_category, receipt, notes
 const av  = (card,sz=36) => {
   const h=ch(card);
   return `<div class="av" style="width:${sz}px;height:${sz}px;background:${h.bg};color:${h.col};font-size:${Math.round(sz*.31)}px" aria-hidden="true">${h.init}</div>`;
@@ -838,6 +916,14 @@ const ci = v => v
   ? '<i class="ti ti-circle-check" style="color:var(--teal);font-size:16px" aria-label="Yes"></i>'
   : '<i class="ti ti-circle" style="color:var(--t3);font-size:16px" aria-label="No"></i>';
 const pcolor = p => p===100?'var(--teal)':p>=50?'var(--amber)':'var(--blue)';
+
+// Effective display status: if sheet says pending/notified but some fields are filled → Partial
+const effectiveSt = t => {
+  if(t.st==='complete'||t.st==='pushed'||t.st==='partial') return t.st;
+  const c=comp(t);
+  if(c>0 && c<COMP_TOTAL) return 'partial';
+  return t.st||'pending';
+};
 
 // ─── STATS ─────────────────────────────────────────────────────────────────
 function updStats(){
@@ -1051,8 +1137,33 @@ function showUnsavedBadge(show){
   if(b) b.style.display = show ? '' : 'none';
 }
 
+async function syncProjectsFromSheets(){
+  const btn=document.getElementById('proj-sync-btn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader spin" aria-hidden="true"></i> Syncing…';}
+  if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')){
+    toast('Not configured','DASHBOARD_DATA_URL not set — deploy first','info');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets';}
+    return;
+  }
+  // Derive /projects URL from DASHBOARD_DATA_URL (replace /dashboard-data with /projects)
+  const projUrl=DASHBOARD_DATA_URL.replace(/\/dashboard-data.*$/,'/projects');
+  try{
+    const r=await fetch(projUrl+'?_nc='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    PROJECTS=d.projects||[];
+    buildProjects();
+    toast('Projects synced',`${PROJECTS.length} project${PROJECTS.length!==1?'s':''} loaded from Google Sheets`,'success');
+  }catch(e){
+    toast('Sync failed','Could not load projects: '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets';}
+  }
+}
+
 function openProjectsSheet(){
-  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!==''){
+  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!=='https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0'){
     window.open(PROJECTS_SHEET_URL, '_blank');
   } else {
     toast('Not configured','PROJECTS_SHEET_URL not set in Netlify env vars','info');
@@ -1071,7 +1182,7 @@ function buildList(){
   const el=document.getElementById('txnlist');
   const rows=TX
     .filter(t=>cfilt==='ALL'||t.c===cfilt)
-    .filter(t=>sFilter==='ALL'||t.st===sFilter);
+    .filter(t=>sFilter==='ALL'||effectiveSt(t)===sFilter);
   const cl=document.getElementById('txn-count-lbl');
   if(cl){
     const filterDesc=sFilter!=='ALL'?` · ${sFilter}`:'';
@@ -1091,8 +1202,8 @@ function buildList(){
         <div class="merchant">${t.m}</div>
         <div class="txnmeta">••••${t.c} · ${ch(t.c).name} · ${t.tm||''}</div>
       </div>
-      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
-      <div>${badge(t.st)}</div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
   el.querySelectorAll('.txnitem').forEach(r=>r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click();}}));
 }
@@ -1104,19 +1215,29 @@ function buildDetail(){
   if(!selId){de.innerHTML='<div class="dempty"><i class="ti ti-cursor-text"></i><span>Select a transaction</span></div>';return;}
   const t=TX.find(x=>x.id===selId);
   if(!t){de.innerHTML='';return;}
-  const h=ch(t.c), c=comp(t), p=Math.round(c/4*100);
-  // Receipt: support bool rc AND string rc_url (live data from n8n)
+  const h=ch(t.c), c=comp(t), p=Math.round(c/COMP_TOTAL*100);
   const hasRc = !!(t.rc||t.rc_url);
   const rcVal = t.rc_url
     ? `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal)">View receipt ↗</a>`
     : (hasRc ? 'Uploaded ✓' : '');
-  const isPushed = t.st==='pushed';
+  const isPushed = effectiveSt(t)==='pushed';
+  // Build project options for dropdown
+  const projOpts = PROJECTS.filter(p=>p.active!==false).map(p=>
+    `<option value="${p.name}"${t.pr===p.name?' selected':''}>${p.name}</option>`).join('');
+  // Build account category options — grouped to match Slack modal
+  const acOptsAccounts = CHART_OF_ACCOUNTS
+    .filter(a=>/^7\d{3}/.test(a))
+    .map(a=>`<option value="${a}"${t.ac===a?' selected':''}>${a}</option>`).join('');
+  const acOptsCOGS = CHART_OF_ACCOUNTS
+    .filter(a=>/^5\d{3}/.test(a))
+    .map(a=>`<option value="${a}"${t.ac===a?' selected':''}>${a}</option>`).join('');
+  const acOpts = `<optgroup label="Accounts">${acOptsAccounts}</optgroup><optgroup label="Products &amp; Services">${acOptsCOGS}</optgroup>`;
   de.innerHTML=`
   <div class="dsec">
     <div style="display:flex;align-items:center;gap:12px">
       ${av(t.c,44)}
       <div style="flex:1"><div style="font-size:15px;font-weight:700">${h.name}</div><div style="font-size:11px;color:var(--t3)">${h.role} · Card ••••${t.c} · ${t.id}</div></div>
-      ${badge(t.st)}
+      ${badge(effectiveSt(t))}
     </div>
   </div>
   <div class="dsec">
@@ -1125,18 +1246,85 @@ function buildDetail(){
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Merchant</div><div style="font-weight:600;font-size:13px">${t.m}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Amount</div><div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber)">${fmt(t.a)}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Filing progress</div><div style="font-size:12px;font-weight:600">${c}/4 fields</div><div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Filing progress</div><div style="font-size:12px;font-weight:600">${c}/${COMP_TOTAL} fields</div><div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div></div>
     </div>
   </div>
   <div class="dsec">
-    <div class="dlbl">Cardholder responses</div>
-    <div style="background:var(--s2);border-radius:8px;padding:2px 12px">
-      ${[['Purpose',t.pu],['Project',t.pr],['Receipt',rcVal],['Notes',t.no]].map(([n,v])=>`
-      <div class="dfield">
-        <span class="dfname">${n}</span>
-        <span class="dfval" style="color:${v?'var(--t1)':'var(--t3)'}">${v||'Awaiting via Slack…'}</span>
-        ${ci(v)}
-      </div>`).join('')}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="dlbl" style="margin-bottom:0">Cardholder responses</div>
+      <span style="font-size:11px;color:var(--t3)">Editable — saves to Google Sheets</span>
+    </div>
+    <div style="background:var(--s2);border-radius:8px;overflow:hidden">
+      <!-- PURPOSE row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Purpose</div>
+        <input id="dr-purpose" type="text" value="${t.pu||''}" placeholder="e.g. Roof materials, Lumber…"
+          class="dr-input" style="margin:0"
+          onblur="saveField('${t.id}','purpose',this.value,'pu')">
+        <div style="display:flex;justify-content:center">
+          ${t.pu
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
+      </div>
+      <!-- PROJECT row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Project</div>
+        <select id="dr-project" class="dr-input" style="color-scheme:dark;margin:0"
+          onchange="saveField('${t.id}','project',this.value,'pr')">
+          <option value="">— Select project —</option>
+          ${projOpts}
+        </select>
+        <div style="display:flex;justify-content:center">
+          ${t.pr
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
+      </div>
+      <!-- ACCOUNT CATEGORY row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Account</div>
+        <select id="dr-accat" class="dr-input" style="color-scheme:dark;margin:0"
+          onchange="saveField('${t.id}','account_category',this.value,'ac')">
+          <option value="">— Select account category —</option>
+          ${acOpts}
+        </select>
+        <div style="display:flex;justify-content:center">
+          ${t.ac
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
+      </div>
+      <!-- RECEIPT row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Receipt</div>
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          ${hasRc
+            ? `<span style="font-size:12px;color:var(--teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rcVal}</span>`
+            : `<span style="font-size:12px;color:var(--t3)">Awaiting…</span>`}
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:var(--blue);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:2px 7px;background:rgba(96,165,250,.07);white-space:nowrap;flex-shrink:0" title="Upload receipt">
+            <i class="ti ti-upload" style="font-size:12px" aria-hidden="true"></i> Upload
+            <input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadReceipt('${t.id}',this)">
+          </label>
+        </div>
+        <div style="display:flex;justify-content:center">
+          ${hasRc
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
+      </div>
+      <!-- NOTES row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:start;gap:8px;padding:9px 12px">
+        <div style="font-size:11px;color:var(--t3);font-weight:500;padding-top:4px">Notes</div>
+        <textarea id="dr-notes" rows="2" placeholder="Any additional context…"
+          class="dr-input" style="resize:vertical;margin:0"
+          onblur="saveField('${t.id}','notes',this.value,'no')">${t.no||''}</textarea>
+        <div style="display:flex;justify-content:center;padding-top:4px">
+          ${t.no
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
+      </div>
     </div>
   </div>
   <div class="dsec">
@@ -1154,11 +1342,99 @@ function buildDetail(){
   </div>
   <div class="dsec" style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-sm" onclick="resend('${t.id}')"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>
-    ${!isPushed?`<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" onclick="markDone('${t.id}')"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`:''}
+    ${!isPushed
+      ? (effectiveSt(t)==='complete'
+          ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" onclick="markPending('${t.id}')"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
+          : `<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" onclick="markDone('${t.id}')"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`)
+      : ''}
     ${isPushed?`<span style="font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="ti ti-brand-quickbooks" style="color:var(--teal)"></i> Pushed to QuickBooks</span>`:''}
   </div>`;
 }
 function resend(id){const t=TX.find(x=>x.id===id);toast('Slack','Reminder sent to '+ch(t.c).name+' via n8n → Slack','info');}
+
+async function markPending(id){
+  const t=TX.find(x=>x.id===id);
+  if(!t||t.st==='pushed') return;
+  const prev=t.st;
+  t.st='pending';
+  updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+  if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
+  try{
+    const r=await fetch(DASHBOARD_DATA_URL,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+      body:JSON.stringify({txn_id:t.id,field:'status',value:'pending'})
+    });
+    const d=await r.json();
+    if(!r.ok||d.error){
+      t.st=prev;
+      updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+      toast('Sync failed',d.error||'Could not update sheet — try again','error');
+    } else {
+      toast('Reverted',t.m+' marked pending','info');
+    }
+  }catch(e){
+    t.st=prev;
+    updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+    toast('Sync failed','Network error — '+e.message,'error');
+  }
+}
+
+async function uploadReceipt(txnId, input){
+  const file=input.files[0];
+  if(!file) return;
+  const t=TX.find(x=>x.id===txnId);
+  if(!t) return;
+  // Convert to base64 for inline preview / storage
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const dataUrl=e.target.result;
+    t.rc=true;
+    t.rc_url=dataUrl; // local preview; replace with remote URL if backend supports it
+    updStats();buildDetail();buildSheet();
+    toast('Receipt','Receipt attached to transaction','success');
+    // If backend supports upload, POST here; for now just local
+    if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
+      try{
+        const r=await fetch(DASHBOARD_DATA_URL,{
+          method:'PATCH',
+          headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+          body:JSON.stringify({txn_id:txnId,field:'receipt',value:'uploaded'})
+        });
+        const d=await r.json();
+        if(!r.ok||d.error) toast('Sync note','Receipt attached locally — sheet sync partial','info');
+      }catch(e){ /* non-fatal */ }
+    }
+  };
+  reader.readAsDataURL(file);
+}
+async function saveField(txnId, field, value, txField){
+  const t=TX.find(x=>x.id===txnId);
+  if(!t) return;
+  const prev=t[txField];
+  if(value===prev||(value===''&&!prev)) return; // no change
+  t[txField]=value;
+  updStats();buildSheet();buildRecent();buildAttention();
+  if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
+  try{
+    const r=await fetch(DASHBOARD_DATA_URL,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+      body:JSON.stringify({txn_id:txnId, field, value})
+    });
+    const d=await r.json();
+    if(!r.ok||d.error){
+      t[txField]=prev;
+      toast('Sync failed',d.error||'Could not update sheet','error');
+    } else {
+      toast('Saved',`${field.replace(/_/g,' ')} updated`,'success');
+    }
+  }catch(e){
+    t[txField]=prev;
+    toast('Sync failed','Network error: '+e.message,'error');
+  }
+}
+
 async function markDone(id){
   const t=TX.find(x=>x.id===id);
   if(!t||t.st==='pushed') return;
@@ -1197,11 +1473,38 @@ async function markDone(id){
   }
 }
 
+// ─── CARD FILTER CHIPS ───────────────────────────────────────────────────────
+function buildChips(){
+  const container=document.querySelector('.chips');
+  if(!container) return;
+  // Remove all chips except the static "All cards" one
+  container.querySelectorAll('.chip[data-card]').forEach(c=>c.remove());
+  Object.entries(H).forEach(([card,h])=>{
+    const btn=document.createElement('button');
+    btn.className='chip'+(cfilt===card?' on':'');
+    btn.dataset.card=card;
+    btn.textContent=`••••${card} ${h.name.split(' ')[1]||h.name}`;
+    btn.onclick=()=>filt(card,btn);
+    btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();btn.click();}});
+    container.appendChild(btn);
+  });
+  // Re-sync "All cards" chip active state
+  const allBtn=container.querySelector('.chip:not([data-card])');
+  if(allBtn) allBtn.classList.toggle('on',cfilt==='ALL');
+}
+
 // ─── FILTER ─────────────────────────────────────────────────────────────────
 function filt(card,btn){
   cfilt=card;
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   if(btn) btn.classList.add('on');
+  else {
+    // Called from code (not a click), sync the right chip
+    const target=cfilt==='ALL'
+      ? document.querySelector('.chip:not([data-card])')
+      : document.querySelector(`.chip[data-card="${cfilt}"]`);
+    if(target) target.classList.add('on');
+  }
   buildList();
 }
 
@@ -1221,28 +1524,31 @@ function buildSheet(){
   const done=rows.filter(t=>t.st==='complete'||t.st==='pushed').length;
 
   tb.innerHTML=rows.length ? rows.map(t=>{
-    const h=ch(t.c), c=comp(t), p=Math.round(c/4*100);
+    const h=ch(t.c), c=comp(t);
     const hasRc=!!(t.rc||t.rc_url);
     const rcCell=t.rc_url
       ? `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:none">View ↗</a>`
       : ci(hasRc);
-    const rb=t.st==='pushed'?'rgba(16,185,129,.03)':t.st==='complete'?'rgba(16,185,129,.05)':t.st==='partial'?'rgba(245,158,11,.04)':'';
+    const rb=effectiveSt(t)==='pushed'?'rgba(16,185,129,.03)':effectiveSt(t)==='complete'?'rgba(16,185,129,.05)':effectiveSt(t)==='partial'?'rgba(245,158,11,.04)':'';
+    const pct=Math.round(c/COMP_TOTAL*100);
     return `<tr style="${rb?'background:'+rb:''}">
       <td class="mono" style="font-size:11px;white-space:nowrap">${t.dt}</td>
       <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${h.name}</span></div></td>
+      <td class="mono" style="font-size:11px;color:var(--t3)">••••${t.c}</td>
       <td style="max-width:130px;font-size:12px">${t.m}</td>
       <td class="mono" style="text-align:right;font-weight:700">${fmt(t.a)}</td>
       <td style="color:${t.pu?'var(--t1)':'var(--t3)'};">${t.pu||'—'}</td>
       <td style="color:${t.pr?'var(--t1)':'var(--t3)'};">${t.pr||'—'}</td>
+      <td style="color:${t.ac?'var(--t1)':'var(--t3)'};">${t.ac||'—'}</td>
       <td style="text-align:center">${rcCell}</td>
       <td style="text-align:center">${ci(t.no)}</td>
-      <td>${badge(t.st)}</td>
+      <td>${badge(effectiveSt(t))}</td>
       <td style="min-width:90px">
-        <div style="font-size:10px;color:var(--t3);margin-bottom:3px">${c}/4</div>
-        <div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:3px">${c}/${COMP_TOTAL}</div>
+        <div class="prog"><div class="progfill" style="width:${pct}%;background:${pcolor(pct)}"></div></div>
       </td>
     </tr>`;
-  }).join('') : `<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--t3);font-size:12px">No transactions for the selected date range</td></tr>`;
+  }).join('') : `<tr><td colspan="12" style="text-align:center;padding:28px;color:var(--t3);font-size:12px">No transactions for the selected date range</td></tr>`;
 
   // Footer — show date range context when active
   const sf=document.getElementById('sheetfooter');
@@ -1385,7 +1691,7 @@ function buildRecent(){
       ${av(t.c,32)}
       <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name} · ${t.tm||''}</div></div>
       <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
-      <div>${badge(t.st)}</div>
+      <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
 }
 function buildAttention(){
@@ -1396,18 +1702,18 @@ function buildAttention(){
     <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0">
       ${av(t.c,28)}
       <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.m}</div><div style="font-size:11px;color:var(--t3)">${ch(t.c).name} · ${fmt(t.a)}</div></div>
-      ${badge(t.st)}
+      ${badge(effectiveSt(t))}
     </div>`).join('');
 }
 
 // ─── EXPORT (real CSV download) ───────────────────────────────────────────────
 function doExport(){
   const btn=document.getElementById('export-btn');
-  const headers=['Date','Cardholder','Card','Merchant','Amount','Purpose','Project','Receipt','Receipt URL','Notes','Status'];
+  const headers=['Date','Cardholder','Card','Merchant','Amount','Purpose','Project','Account Category','Receipt','Receipt URL','Notes','Status'];
   const rows=TX.map(t=>{
     const h=ch(t.c);
     return [t.dt,h.name,'••••'+t.c,t.m,parseFloat(t.a||0).toFixed(2),
-            t.pu||'',t.pr||'',(t.rc||t.rc_url)?'Yes':'No',
+            t.pu||'',t.pr||'',t.ac||'',(t.rc||t.rc_url)?'Yes':'No',
             t.rc_url||'',t.no||'',t.st];
   });
   const csv=[headers,...rows].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -1776,6 +2082,7 @@ async function loadDashboardData(silent=false){
     if(d.syncTs) SYS_STATUS.syncTs=d.syncTs;
 
     updStats();
+    buildChips();
     buildList();
     buildRecent();
     buildAttention();
@@ -1814,6 +2121,14 @@ initSysStatus();
 // Load live transaction data from Cloudflare Worker → Google Sheets
 // initCharts() runs inside loadDashboardData() after data is available
 loadDashboardData(false);
+// Auto-sync projects from Sheets on load (silent — no toast on success)
+if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
+  const _projUrl=DASHBOARD_DATA_URL.replace(/\/dashboard-data.*$/,'/projects');
+  fetch(_projUrl+'?_nc='+Date.now(),{cache:'no-store'})
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{if(d&&d.projects){PROJECTS=d.projects;buildProjects();}})
+    .catch(()=>{});
+}
 </script>
 </body>
 </html>
