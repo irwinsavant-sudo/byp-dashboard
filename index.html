@@ -86,16 +86,17 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 
 /* ── PANEL ───────────────────────────── */
 .panel{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.panel.of-visible{overflow:visible}
 .pnhdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--bdr)}
 .pntitle{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--t1)}
 
 /* ── BADGES ──────────────────────────── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600}
-.badge-pending  {background:var(--blueDim);color:var(--blue)}
-.badge-notified {background:rgba(96,165,250,.08);color:#93C5FD;border:1px solid rgba(96,165,250,.2)}
-.badge-partial  {background:var(--amberDim);color:var(--amber)}
-.badge-complete {background:var(--tealDim);color:var(--teal)}
-.badge-pushed   {background:rgba(16,185,129,.06);color:#6EE7B7;border:1px solid rgba(16,185,129,.18)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.02em}
+.badge-pending  {background:rgba(96,165,250,.18);color:#93C5FD;border:1px solid rgba(96,165,250,.35)}
+.badge-notified {background:rgba(96,165,250,.10);color:#BAD4FC;border:1px solid rgba(96,165,250,.25)}
+.badge-partial  {background:rgba(245,158,11,.22);color:#FCD34D;border:1px solid rgba(245,158,11,.45)}
+.badge-complete {background:rgba(16,185,129,.20);color:#6EE7B7;border:1px solid rgba(16,185,129,.40)}
+.badge-pushed   {background:rgba(16,185,129,.08);color:#6EE7B7;border:1px solid rgba(16,185,129,.22)}
 .badge-new      {background:rgba(139,92,246,.2);color:#A78BFA}
 .badge-overdue  {background:var(--redDim);color:var(--red)}
 
@@ -439,7 +440,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
     </div>
   </div>
   <div class="feedlayout">
-    <div class="panel">
+    <div class="panel of-visible">
       <div class="pnhdr">
         <div class="pntitle"><i class="ti ti-list" aria-hidden="true"></i> Transactions</div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -885,7 +886,7 @@ const QB_PUSH_SECRET          = '0ad2dbb851b04552f4bb3ec34a402abd833905fa6646575
 const SHEETS_URL              = 'https://docs.google.com/spreadsheets/d/1lM3WMabIbzWc9s5pWv9qkMBn5SVaCPe8AYKeHwxegUg/edit';
 const PROJECTS_WEBHOOK_URL    = 'https://n8n-space.byp-app.workers.dev/webhook/projects';
 const PROJECTS_WEBHOOK_SECRET = '61fffb85d3926299c5113f1e6a6cc10cde0092c18681ea6f7681132f0d411a17';
-const PROJECTS_SHEET_URL      = '';
+const PROJECTS_SHEET_URL      = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0';
 const N8N_STATUS_URL          = 'https://n8n-space.byp-app.workers.dev/workflow-status';
 const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard-data'; // Worker /dashboard-data endpoint
 const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa'; // shared secret for write-back
@@ -915,6 +916,14 @@ const ci = v => v
   ? '<i class="ti ti-circle-check" style="color:var(--teal);font-size:16px" aria-label="Yes"></i>'
   : '<i class="ti ti-circle" style="color:var(--t3);font-size:16px" aria-label="No"></i>';
 const pcolor = p => p===100?'var(--teal)':p>=50?'var(--amber)':'var(--blue)';
+
+// Effective display status: if sheet says pending/notified but some fields are filled → Partial
+const effectiveSt = t => {
+  if(t.st==='complete'||t.st==='pushed'||t.st==='partial') return t.st;
+  const c=comp(t);
+  if(c>0 && c<COMP_TOTAL) return 'partial';
+  return t.st||'pending';
+};
 
 // ─── STATS ─────────────────────────────────────────────────────────────────
 function updStats(){
@@ -1154,7 +1163,7 @@ async function syncProjectsFromSheets(){
 }
 
 function openProjectsSheet(){
-  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!==''){
+  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!=='https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0'){
     window.open(PROJECTS_SHEET_URL, '_blank');
   } else {
     toast('Not configured','PROJECTS_SHEET_URL not set in Netlify env vars','info');
@@ -1173,7 +1182,7 @@ function buildList(){
   const el=document.getElementById('txnlist');
   const rows=TX
     .filter(t=>cfilt==='ALL'||t.c===cfilt)
-    .filter(t=>sFilter==='ALL'||t.st===sFilter);
+    .filter(t=>sFilter==='ALL'||effectiveSt(t)===sFilter);
   const cl=document.getElementById('txn-count-lbl');
   if(cl){
     const filterDesc=sFilter!=='ALL'?` · ${sFilter}`:'';
@@ -1193,8 +1202,8 @@ function buildList(){
         <div class="merchant">${t.m}</div>
         <div class="txnmeta">••••${t.c} · ${ch(t.c).name} · ${t.tm||''}</div>
       </div>
-      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
-      <div>${badge(t.st)}</div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
   el.querySelectorAll('.txnitem').forEach(r=>r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click();}}));
 }
@@ -1211,7 +1220,7 @@ function buildDetail(){
   const rcVal = t.rc_url
     ? `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal)">View receipt ↗</a>`
     : (hasRc ? 'Uploaded ✓' : '');
-  const isPushed = t.st==='pushed';
+  const isPushed = effectiveSt(t)==='pushed';
   // Build project options for dropdown
   const projOpts = PROJECTS.filter(p=>p.active!==false).map(p=>
     `<option value="${p.name}"${t.pr===p.name?' selected':''}>${p.name}</option>`).join('');
@@ -1228,7 +1237,7 @@ function buildDetail(){
     <div style="display:flex;align-items:center;gap:12px">
       ${av(t.c,44)}
       <div style="flex:1"><div style="font-size:15px;font-weight:700">${h.name}</div><div style="font-size:11px;color:var(--t3)">${h.role} · Card ••••${t.c} · ${t.id}</div></div>
-      ${badge(t.st)}
+      ${badge(effectiveSt(t))}
     </div>
   </div>
   <div class="dsec">
@@ -1245,43 +1254,76 @@ function buildDetail(){
       <div class="dlbl" style="margin-bottom:0">Cardholder responses</div>
       <span style="font-size:11px;color:var(--t3)">Editable — saves to Google Sheets</span>
     </div>
-    <div style="background:var(--s2);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:10px">
-      <div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">PURPOSE</div>
+    <div style="background:var(--s2);border-radius:8px;overflow:hidden">
+      <!-- PURPOSE row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Purpose</div>
         <input id="dr-purpose" type="text" value="${t.pu||''}" placeholder="e.g. Roof materials, Lumber…"
-          class="dr-input"
+          class="dr-input" style="margin:0"
           onblur="saveField('${t.id}','purpose',this.value,'pu')">
+        <div style="display:flex;justify-content:center">
+          ${t.pu
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
       </div>
-      <div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">PROJECT</div>
-        <select id="dr-project" class="dr-input" style="color-scheme:dark"
+      <!-- PROJECT row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Project</div>
+        <select id="dr-project" class="dr-input" style="color-scheme:dark;margin:0"
           onchange="saveField('${t.id}','project',this.value,'pr')">
           <option value="">— Select project —</option>
           ${projOpts}
         </select>
+        <div style="display:flex;justify-content:center">
+          ${t.pr
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
       </div>
-      <div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">ACCOUNT CATEGORY</div>
-        <select id="dr-accat" class="dr-input" style="color-scheme:dark"
+      <!-- ACCOUNT CATEGORY row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Account</div>
+        <select id="dr-accat" class="dr-input" style="color-scheme:dark;margin:0"
           onchange="saveField('${t.id}','account_category',this.value,'ac')">
           <option value="">— Select account category —</option>
           ${acOpts}
         </select>
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">RECEIPT</div>
-        <div style="display:flex;align-items:center;gap:10px">
-          ${rcVal
-            ? `<span style="font-size:12px;color:var(--teal)">${rcVal}</span>`
-            : `<span style="font-size:12px;color:var(--t3)">No receipt uploaded yet</span>`}
-          <span style="font-size:11px;color:var(--t3);font-style:italic">Uploaded via Slack</span>
+        <div style="display:flex;justify-content:center">
+          ${t.ac
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
         </div>
       </div>
-      <div>
-        <div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">NOTES</div>
+      <!-- RECEIPT row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
+        <div style="font-size:11px;color:var(--t3);font-weight:500">Receipt</div>
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          ${hasRc
+            ? `<span style="font-size:12px;color:var(--teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rcVal}</span>`
+            : `<span style="font-size:12px;color:var(--t3)">Awaiting…</span>`}
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:var(--blue);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:2px 7px;background:rgba(96,165,250,.07);white-space:nowrap;flex-shrink:0" title="Upload receipt">
+            <i class="ti ti-upload" style="font-size:12px" aria-hidden="true"></i> Upload
+            <input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadReceipt('${t.id}',this)">
+          </label>
+        </div>
+        <div style="display:flex;justify-content:center">
+          ${hasRc
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
+      </div>
+      <!-- NOTES row -->
+      <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:start;gap:8px;padding:9px 12px">
+        <div style="font-size:11px;color:var(--t3);font-weight:500;padding-top:4px">Notes</div>
         <textarea id="dr-notes" rows="2" placeholder="Any additional context…"
-          class="dr-input" style="resize:vertical"
+          class="dr-input" style="resize:vertical;margin:0"
           onblur="saveField('${t.id}','notes',this.value,'no')">${t.no||''}</textarea>
+        <div style="display:flex;justify-content:center;padding-top:4px">
+          ${t.no
+            ? `<i class="ti ti-circle-check" style="color:var(--teal);font-size:18px" aria-label="Filled"></i>`
+            : `<i class="ti ti-circle" style="color:var(--t3);font-size:18px;opacity:.5" aria-label="Empty"></i>`}
+        </div>
       </div>
     </div>
   </div>
@@ -1300,13 +1342,72 @@ function buildDetail(){
   </div>
   <div class="dsec" style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-sm" onclick="resend('${t.id}')"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>
-    ${!isPushed?`<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" onclick="markDone('${t.id}')"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`:''}
+    ${!isPushed
+      ? (effectiveSt(t)==='complete'
+          ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" onclick="markPending('${t.id}')"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
+          : `<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" onclick="markDone('${t.id}')"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`)
+      : ''}
     ${isPushed?`<span style="font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="ti ti-brand-quickbooks" style="color:var(--teal)"></i> Pushed to QuickBooks</span>`:''}
   </div>`;
 }
 function resend(id){const t=TX.find(x=>x.id===id);toast('Slack','Reminder sent to '+ch(t.c).name+' via n8n → Slack','info');}
 
-// ─── SAVE FIELD (inline cardholder response edit) ────────────────────────────
+async function markPending(id){
+  const t=TX.find(x=>x.id===id);
+  if(!t||t.st==='pushed') return;
+  const prev=t.st;
+  t.st='pending';
+  updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+  if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
+  try{
+    const r=await fetch(DASHBOARD_DATA_URL,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+      body:JSON.stringify({txn_id:t.id,field:'status',value:'pending'})
+    });
+    const d=await r.json();
+    if(!r.ok||d.error){
+      t.st=prev;
+      updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+      toast('Sync failed',d.error||'Could not update sheet — try again','error');
+    } else {
+      toast('Reverted',t.m+' marked pending','info');
+    }
+  }catch(e){
+    t.st=prev;
+    updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+    toast('Sync failed','Network error — '+e.message,'error');
+  }
+}
+
+async function uploadReceipt(txnId, input){
+  const file=input.files[0];
+  if(!file) return;
+  const t=TX.find(x=>x.id===txnId);
+  if(!t) return;
+  // Convert to base64 for inline preview / storage
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const dataUrl=e.target.result;
+    t.rc=true;
+    t.rc_url=dataUrl; // local preview; replace with remote URL if backend supports it
+    updStats();buildDetail();buildSheet();
+    toast('Receipt','Receipt attached to transaction','success');
+    // If backend supports upload, POST here; for now just local
+    if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
+      try{
+        const r=await fetch(DASHBOARD_DATA_URL,{
+          method:'PATCH',
+          headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+          body:JSON.stringify({txn_id:txnId,field:'receipt',value:'uploaded'})
+        });
+        const d=await r.json();
+        if(!r.ok||d.error) toast('Sync note','Receipt attached locally — sheet sync partial','info');
+      }catch(e){ /* non-fatal */ }
+    }
+  };
+  reader.readAsDataURL(file);
+}
 async function saveField(txnId, field, value, txField){
   const t=TX.find(x=>x.id===txnId);
   if(!t) return;
@@ -1372,11 +1473,38 @@ async function markDone(id){
   }
 }
 
+// ─── CARD FILTER CHIPS ───────────────────────────────────────────────────────
+function buildChips(){
+  const container=document.querySelector('.chips');
+  if(!container) return;
+  // Remove all chips except the static "All cards" one
+  container.querySelectorAll('.chip[data-card]').forEach(c=>c.remove());
+  Object.entries(H).forEach(([card,h])=>{
+    const btn=document.createElement('button');
+    btn.className='chip'+(cfilt===card?' on':'');
+    btn.dataset.card=card;
+    btn.textContent=`••••${card} ${h.name.split(' ')[1]||h.name}`;
+    btn.onclick=()=>filt(card,btn);
+    btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();btn.click();}});
+    container.appendChild(btn);
+  });
+  // Re-sync "All cards" chip active state
+  const allBtn=container.querySelector('.chip:not([data-card])');
+  if(allBtn) allBtn.classList.toggle('on',cfilt==='ALL');
+}
+
 // ─── FILTER ─────────────────────────────────────────────────────────────────
 function filt(card,btn){
   cfilt=card;
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   if(btn) btn.classList.add('on');
+  else {
+    // Called from code (not a click), sync the right chip
+    const target=cfilt==='ALL'
+      ? document.querySelector('.chip:not([data-card])')
+      : document.querySelector(`.chip[data-card="${cfilt}"]`);
+    if(target) target.classList.add('on');
+  }
   buildList();
 }
 
@@ -1401,7 +1529,7 @@ function buildSheet(){
     const rcCell=t.rc_url
       ? `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:none">View ↗</a>`
       : ci(hasRc);
-    const rb=t.st==='pushed'?'rgba(16,185,129,.03)':t.st==='complete'?'rgba(16,185,129,.05)':t.st==='partial'?'rgba(245,158,11,.04)':'';
+    const rb=effectiveSt(t)==='pushed'?'rgba(16,185,129,.03)':effectiveSt(t)==='complete'?'rgba(16,185,129,.05)':effectiveSt(t)==='partial'?'rgba(245,158,11,.04)':'';
     const pct=Math.round(c/COMP_TOTAL*100);
     return `<tr style="${rb?'background:'+rb:''}">
       <td class="mono" style="font-size:11px;white-space:nowrap">${t.dt}</td>
@@ -1414,7 +1542,7 @@ function buildSheet(){
       <td style="color:${t.ac?'var(--t1)':'var(--t3)'};">${t.ac||'—'}</td>
       <td style="text-align:center">${rcCell}</td>
       <td style="text-align:center">${ci(t.no)}</td>
-      <td>${badge(t.st)}</td>
+      <td>${badge(effectiveSt(t))}</td>
       <td style="min-width:90px">
         <div style="font-size:10px;color:var(--t3);margin-bottom:3px">${c}/${COMP_TOTAL}</div>
         <div class="prog"><div class="progfill" style="width:${pct}%;background:${pcolor(pct)}"></div></div>
@@ -1563,7 +1691,7 @@ function buildRecent(){
       ${av(t.c,32)}
       <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name} · ${t.tm||''}</div></div>
       <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
-      <div>${badge(t.st)}</div>
+      <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
 }
 function buildAttention(){
@@ -1574,7 +1702,7 @@ function buildAttention(){
     <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0">
       ${av(t.c,28)}
       <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.m}</div><div style="font-size:11px;color:var(--t3)">${ch(t.c).name} · ${fmt(t.a)}</div></div>
-      ${badge(t.st)}
+      ${badge(effectiveSt(t))}
     </div>`).join('');
 }
 
@@ -1954,6 +2082,7 @@ async function loadDashboardData(silent=false){
     if(d.syncTs) SYS_STATUS.syncTs=d.syncTs;
 
     updStats();
+    buildChips();
     buildList();
     buildRecent();
     buildAttention();
