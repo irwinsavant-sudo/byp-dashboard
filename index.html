@@ -536,8 +536,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   <div class="panel" style="overflow-x:auto">
     <table class="stbl" aria-label="Transaction status sheet">
       <thead><tr>
-        <th>Date</th><th>Cardholder</th><th>Merchant</th><th style="text-align:right">Amount</th>
-        <th>Purpose</th><th>Project</th>
+        <th>Date</th><th>Cardholder</th><th>Card</th><th>Merchant</th><th style="text-align:right">Amount</th>
+        <th>Purpose</th><th>Project</th><th>Category</th>
         <th style="text-align:center" aria-label="Receipt uploaded">Receipt</th>
         <th style="text-align:center" aria-label="Notes added">Notes</th>
         <th>Status</th><th>Progress</th>
@@ -1238,10 +1238,12 @@ function buildSheet(){
     return `<tr style="${rb?'background:'+rb:''}">
       <td class="mono" style="font-size:11px;white-space:nowrap">${esc(t.dt)}</td>
       <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${esc(h.name)}</span></div></td>
+      <td class="mono" style="font-size:11px;color:var(--t3)">••••${esc(t.c)}</td>
       <td style="max-width:130px;font-size:12px">${esc(t.m)}</td>
       <td class="mono" style="text-align:right;font-weight:700">${fmt(t.a)}</td>
       <td style="color:${t.pu?'var(--t1)':'var(--t3)'};">${esc(t.pu)||'—'}</td>
       <td style="color:${t.pr?'var(--t1)':'var(--t3)'};">${esc(t.pr)||'—'}</td>
+      <td style="color:${t.ac?'var(--t1)':'var(--t3)'};">${esc(t.ac)||'—'}</td>
       <td style="text-align:center">${rcCell}</td>
       <td style="text-align:center">${ci(t.no)}</td>
       <td>${badge(t.st)}</td>
@@ -1250,7 +1252,7 @@ function buildSheet(){
         <div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div>
       </td>
     </tr>`;
-  }).join('') : `<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--t3);font-size:12px">No transactions for the selected date range</td></tr>`;
+  }).join('') : `<tr><td colspan="12" style="text-align:center;padding:28px;color:var(--t3);font-size:12px">No transactions for the selected date range</td></tr>`;
 
   // Footer — show date range context when active
   const sf=document.getElementById('sheetfooter');
