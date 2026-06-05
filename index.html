@@ -821,6 +821,14 @@ let dateFrom='', dateTo='', activeDateQuick='all';
 // ─── HELPERS ───────────────────────────────────────────────────────────────
 // Safe cardholder lookup — never crashes if card missing from H
 const ch  = card => H[card] || {name:'Unknown',init:'??',col:'#8B9CB8',bg:'#18202E',role:'Cardholder'};
+
+// esc() — HTML-escape any value before inserting into innerHTML.
+// All data coming from Google Sheets goes through this to prevent XSS.
+// A merchant name or note containing <script> or onerror= would otherwise
+// execute with access to the webhook secrets embedded in this page's JS scope.
+const esc = v => String(v == null ? '' : v)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const fmt = n => '$'+parseFloat((n||0).toString().replace(/[^0-9.-]/g,'')||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const comp= t => [t.pu, t.pr, (t.rc||t.rc_url), t.no].filter(Boolean).length;
 const av  = (card,sz=36) => {
@@ -1088,10 +1096,10 @@ function buildList(){
     <div class="txnitem${selId===t.id?' sel':''}" onclick="sel('${t.id}')" role="listitem button" tabindex="0" aria-selected="${selId===t.id}">
       ${av(t.c,36)}
       <div>
-        <div class="merchant">${t.m}</div>
-        <div class="txnmeta">••••${t.c} · ${ch(t.c).name} · ${t.tm||''}</div>
+        <div class="merchant">${esc(t.m)}</div>
+        <div class="txnmeta">••••${esc(t.c)} · ${esc(ch(t.c).name)} · ${esc(t.tm||'')}</div>
       </div>
-      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${esc(t.dt)}</div></div>
       <div>${badge(t.st)}</div>
     </div>`).join('');
   el.querySelectorAll('.txnitem').forEach(r=>r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click();}}));
@@ -1115,16 +1123,16 @@ function buildDetail(){
   <div class="dsec">
     <div style="display:flex;align-items:center;gap:12px">
       ${av(t.c,44)}
-      <div style="flex:1"><div style="font-size:15px;font-weight:700">${h.name}</div><div style="font-size:11px;color:var(--t3)">${h.role} · Card ••••${t.c} · ${t.id}</div></div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:700">${esc(h.name)}</div><div style="font-size:11px;color:var(--t3)">${esc(h.role)} · Card ••••${esc(t.c)} · ${esc(t.id)}</div></div>
       ${badge(t.st)}
     </div>
   </div>
   <div class="dsec">
     <div class="dlbl">Transaction details</div>
     <div class="dgrid2">
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Merchant</div><div style="font-weight:600;font-size:13px">${t.m}</div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Merchant</div><div style="font-weight:600;font-size:13px">${esc(t.m)}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Amount</div><div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber)">${fmt(t.a)}</div></div>
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${esc(t.dt)}${t.tm?' · '+esc(t.tm):''}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Filing progress</div><div style="font-size:12px;font-weight:600">${c}/4 fields</div><div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div></div>
     </div>
   </div>
@@ -1133,8 +1141,8 @@ function buildDetail(){
     <div style="background:var(--s2);border-radius:8px;padding:2px 12px">
       ${[['Purpose',t.pu],['Project',t.pr],['Receipt',rcVal],['Notes',t.no]].map(([n,v])=>`
       <div class="dfield">
-        <span class="dfname">${n}</span>
-        <span class="dfval" style="color:${v?'var(--t1)':'var(--t3)'}">${v||'Awaiting via Slack…'}</span>
+        <span class="dfname">${esc(n)}</span>
+        <span class="dfval" style="color:${v?'var(--t1)':'var(--t3)'}">${v===rcVal ? (v||'Awaiting via Slack…') : (esc(v)||'Awaiting via Slack…')}</span>
         ${ci(v)}
       </div>`).join('')}
     </div>
@@ -1228,12 +1236,12 @@ function buildSheet(){
       : ci(hasRc);
     const rb=t.st==='pushed'?'rgba(16,185,129,.03)':t.st==='complete'?'rgba(16,185,129,.05)':t.st==='partial'?'rgba(245,158,11,.04)':'';
     return `<tr style="${rb?'background:'+rb:''}">
-      <td class="mono" style="font-size:11px;white-space:nowrap">${t.dt}</td>
-      <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${h.name}</span></div></td>
-      <td style="max-width:130px;font-size:12px">${t.m}</td>
+      <td class="mono" style="font-size:11px;white-space:nowrap">${esc(t.dt)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${esc(h.name)}</span></div></td>
+      <td style="max-width:130px;font-size:12px">${esc(t.m)}</td>
       <td class="mono" style="text-align:right;font-weight:700">${fmt(t.a)}</td>
-      <td style="color:${t.pu?'var(--t1)':'var(--t3)'};">${t.pu||'—'}</td>
-      <td style="color:${t.pr?'var(--t1)':'var(--t3)'};">${t.pr||'—'}</td>
+      <td style="color:${t.pu?'var(--t1)':'var(--t3)'};">${esc(t.pu)||'—'}</td>
+      <td style="color:${t.pr?'var(--t1)':'var(--t3)'};">${esc(t.pr)||'—'}</td>
       <td style="text-align:center">${rcCell}</td>
       <td style="text-align:center">${ci(t.no)}</td>
       <td>${badge(t.st)}</td>
@@ -1265,10 +1273,10 @@ function openQB(){
   document.getElementById('qb-list').innerHTML=eligible.length
     ? eligible.map(t=>`
       <div class="modal-listrow">
-        <div style="display:flex;align-items:center;gap:10px">${av(t.c,28)}<span style="font-weight:500">${t.m}</span></div>
+        <div style="display:flex;align-items:center;gap:10px">${av(t.c,28)}<span style="font-weight:500">${esc(t.m)}</span></div>
         <div style="text-align:right">
           <div style="font-family:'JetBrains Mono',monospace;font-weight:700">${fmt(t.a)}</div>
-          <div style="font-size:11px;color:var(--t3)">${t.dt}${t.pr?' · '+t.pr:''}</div>
+          <div style="font-size:11px;color:var(--t3)">${esc(t.dt)}${t.pr?' · '+esc(t.pr):''}</div>
         </div>
       </div>`).join('')
     : `<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No complete transactions${hasRange?' for the selected dates':''}</div>`;
@@ -1349,8 +1357,8 @@ function buildHolders(){
       <div class="holderhdr">
         ${av(card,46)}
         <div style="flex:1">
-          <div style="font-size:16px;font-weight:700">${h.name}</div>
-          <div style="font-size:12px;color:var(--t3)">${h.role||'Cardholder'} · Card ••••${card}</div>
+          <div style="font-size:16px;font-weight:700">${esc(h.name)}</div>
+          <div style="font-size:12px;color:var(--t3)">${esc(h.role||'Cardholder')} · Card ••••${esc(card)}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${rate===100?'var(--teal)':rate>=50?'var(--amber)':'var(--blue)'}">${rate}%</div>
@@ -1369,7 +1377,7 @@ function buildHolders(){
       <div class="prog" style="height:5px;margin-bottom:14px"><div class="progfill" style="width:${rate}%;background:${rate===100?'var(--teal)':rate>=50?'var(--amber)':'var(--blue)'}"></div></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-sm" style="flex:1;justify-content:center" onclick="filt('${card}',null);go('feed');">View txns</button>
-        ${pend>0?`<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" onclick="toast('Slack','Reminder sent to ${h.name} for ${pend} pending txn${pend>1?'s':''}','info')">Remind</button>`:''}
+        ${pend>0?`<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" onclick="toast('Slack','Reminder sent to ${esc(h.name)} for ${pend} pending txn${pend>1?'s':''}','info')">Remind</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1383,8 +1391,8 @@ function buildRecent(){
   el.innerHTML=recent.map(t=>`
     <div class="txnitem" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0" style="cursor:pointer">
       ${av(t.c,32)}
-      <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name} · ${t.tm||''}</div></div>
-      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
+      <div><div class="merchant" style="font-size:12px">${esc(t.m)}</div><div class="txnmeta">${esc(ch(t.c).name)} · ${esc(t.tm||'')}</div></div>
+      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${esc(t.dt)}</div></div>
       <div>${badge(t.st)}</div>
     </div>`).join('');
 }
@@ -1395,7 +1403,7 @@ function buildAttention(){
   el.innerHTML=pend.map(t=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0">
       ${av(t.c,28)}
-      <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.m}</div><div style="font-size:11px;color:var(--t3)">${ch(t.c).name} · ${fmt(t.a)}</div></div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:600">${esc(t.m)}</div><div style="font-size:11px;color:var(--t3)">${esc(ch(t.c).name)} · ${fmt(t.a)}</div></div>
       ${badge(t.st)}
     </div>`).join('');
 }
@@ -1765,6 +1773,13 @@ async function loadDashboardData(silent=false){
       return;
     }
 
+    // Capture previous state BEFORE overwriting TX — required for the
+    // "new transactions arrived" toast comparison below. The old code
+    // assigned TX first, then compared d.count > TX.length, which was
+    // always false because TX.length already equalled d.count.
+    const prevCount  = TX.length;
+    const prevSyncTs = _lastSyncTs;
+
     // Populate global TX and H, then re-render everything
     TX=d.transactions||[];
     const newH=d.cardholders||{};
@@ -1786,11 +1801,13 @@ async function loadDashboardData(silent=false){
     const wfLbl=document.getElementById('dot-workflow-lbl');
     if(wfLbl&&TX.length) wfLbl.textContent=`Active — ${TX.length} txns, ${Object.keys(H).length} cards`;
 
-    // Toast only on first load or when new transactions arrive
-    if(d.syncTs&&d.syncTs!==_lastSyncTs){
-      if(_lastSyncTs&&d.count>TX.length){
+    // Toast only on first load or when new transactions arrive.
+    // Compare against prevCount (captured before TX was overwritten) and
+    // prevSyncTs (captured before _lastSyncTs was updated).
+    if(d.syncTs&&d.syncTs!==prevSyncTs){
+      if(prevSyncTs&&d.count>prevCount){
         toast('New transactions','Dashboard updated with latest Plaid data','success');
-      } else if(!_lastSyncTs&&!silent){
+      } else if(!prevSyncTs&&!silent){
         toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
       }
       _lastSyncTs=d.syncTs;
