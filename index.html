@@ -1153,7 +1153,8 @@ async function syncProjectsFromSheets(){
   let loaded=false;
   for(const url of urls){
     try{
-      const r=await fetch(url+'?_nc='+Date.now(),{cache:'no-store'});
+      const sep=url.includes('?')?'&':'?';
+      const r=await fetch(url+sep+'_nc='+Date.now(),{cache:'no-store'});
       if(!r.ok) continue;
       const d=await r.json();
       if(d.error) continue;
@@ -2176,7 +2177,8 @@ loadDashboardData(false);
     urls.push(PROJECTS_WEBHOOK_URL+'?action=list');
   for(const url of urls){
     try{
-      const r=await fetch(url+'?_nc='+Date.now(),{cache:'no-store'});
+      const sep=url.includes('?')?'&':'?';
+      const r=await fetch(url+sep+'_nc='+Date.now(),{cache:'no-store'});
       if(!r.ok) continue;
       const d=await r.json();
       const list=d.projects||d.data||d;
