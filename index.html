@@ -91,14 +91,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .pntitle{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--t1)}
 
 /* ── BADGES ──────────────────────────── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.02em}
-.badge-pending  {background:rgba(96,165,250,.18);color:#93C5FD;border:1px solid rgba(96,165,250,.35)}
-.badge-notified {background:rgba(96,165,250,.10);color:#BAD4FC;border:1px solid rgba(96,165,250,.25)}
-.badge-partial  {background:rgba(245,158,11,.22);color:#FCD34D;border:1px solid rgba(245,158,11,.45)}
-.badge-complete {background:rgba(16,185,129,.20);color:#6EE7B7;border:1px solid rgba(16,185,129,.40)}
-.badge-pushed   {background:rgba(16,185,129,.08);color:#6EE7B7;border:1px solid rgba(16,185,129,.22)}
-.badge-new      {background:rgba(139,92,246,.2);color:#A78BFA}
-.badge-overdue  {background:var(--redDim);color:var(--red)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.badge-pending  {background:rgba(59,130,246,.30);color:#BFDBFE;border:1px solid rgba(96,165,250,.50)}
+.badge-notified {background:rgba(99,102,241,.25);color:#C7D2FE;border:1px solid rgba(99,102,241,.45)}
+.badge-partial  {background:rgba(245,158,11,.30);color:#FDE68A;border:1px solid rgba(245,158,11,.55)}
+.badge-complete {background:rgba(16,185,129,.28);color:#A7F3D0;border:1px solid rgba(16,185,129,.50)}
+.badge-pushed   {background:rgba(16,185,129,.14);color:#6EE7B7;border:1px solid rgba(16,185,129,.32)}
+.badge-new      {background:rgba(139,92,246,.30);color:#DDD6FE;border:1px solid rgba(139,92,246,.50)}
+.badge-overdue  {background:rgba(239,68,68,.25);color:#FCA5A5;border:1px solid rgba(239,68,68,.45)}
 
 /* ── BUTTONS ─────────────────────────── */
 .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);transition:all .15s;white-space:nowrap;font-family:'Inter',sans-serif}
@@ -122,7 +122,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .chip.on{border-color:var(--amberRing);background:var(--amberDim);color:var(--amber)}
 
 /* ── TRANSACTION LIST ────────────────── */
-.txnitem{display:grid;grid-template-columns:42px 1fr 110px 120px;gap:10px;align-items:center;padding:12px 16px;cursor:pointer;border-left:3px solid transparent;border-bottom:1px solid var(--bdr);transition:background .1s}
+.txnitem{display:grid;grid-template-columns:42px 1fr 110px 90px;gap:10px;align-items:center;padding:12px 16px;cursor:pointer;border-left:3px solid transparent;border-bottom:1px solid var(--bdr);transition:background .1s}
 .txnitem:last-child{border-bottom:none}
 .txnitem:hover{background:var(--s2)}
 .txnitem:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
@@ -286,7 +286,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   :root{--nav:0px}
   .sidebar{display:none}
   .statgrid{grid-template-columns:1fr 1fr}
-  .txnitem{grid-template-columns:36px 1fr 90px}
+  .txnitem{grid-template-columns:36px 1fr 90px 80px}
 }
 
 /* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
@@ -886,7 +886,7 @@ const QB_PUSH_SECRET          = '0ad2dbb851b04552f4bb3ec34a402abd833905fa6646575
 const SHEETS_URL              = 'https://docs.google.com/spreadsheets/d/1lM3WMabIbzWc9s5pWv9qkMBn5SVaCPe8AYKeHwxegUg/edit';
 const PROJECTS_WEBHOOK_URL    = 'https://n8n-space.byp-app.workers.dev/webhook/projects';
 const PROJECTS_WEBHOOK_SECRET = '61fffb85d3926299c5113f1e6a6cc10cde0092c18681ea6f7681132f0d411a17';
-const PROJECTS_SHEET_URL      = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0';
+const PROJECTS_SHEET_URL      = '';
 const N8N_STATUS_URL          = 'https://n8n-space.byp-app.workers.dev/workflow-status';
 const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard-data'; // Worker /dashboard-data endpoint
 const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa'; // shared secret for write-back
@@ -1140,30 +1140,40 @@ function showUnsavedBadge(show){
 async function syncProjectsFromSheets(){
   const btn=document.getElementById('proj-sync-btn');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader spin" aria-hidden="true"></i> Syncing…';}
-  if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')){
-    toast('Not configured','DASHBOARD_DATA_URL not set — deploy first','info');
+  const urls=[];
+  if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%'))
+    urls.push(DASHBOARD_DATA_URL.replace(/\/[^/]*$/,'/projects'));
+  if(PROJECTS_WEBHOOK_URL&&!PROJECTS_WEBHOOK_URL.startsWith('%%'))
+    urls.push(PROJECTS_WEBHOOK_URL);
+  if(!urls.length){
+    toast('Not configured','Neither DASHBOARD_DATA_URL nor PROJECTS_WEBHOOK_URL set — deploy first','info');
     if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets';}
     return;
   }
-  // Derive /projects URL from DASHBOARD_DATA_URL (replace /dashboard-data with /projects)
-  const projUrl=DASHBOARD_DATA_URL.replace(/\/dashboard-data.*$/,'/projects');
-  try{
-    const r=await fetch(projUrl+'?_nc='+Date.now(),{cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    if(d.error) throw new Error(d.error);
-    PROJECTS=d.projects||[];
-    buildProjects();
-    toast('Projects synced',`${PROJECTS.length} project${PROJECTS.length!==1?'s':''} loaded from Google Sheets`,'success');
-  }catch(e){
-    toast('Sync failed','Could not load projects: '+e.message,'error');
-  }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets';}
+  let loaded=false;
+  for(const url of urls){
+    try{
+      const r=await fetch(url+'?_nc='+Date.now(),{cache:'no-store'});
+      if(!r.ok) continue;
+      const d=await r.json();
+      if(d.error) continue;
+      const list=d.projects||d.data||d;
+      if(Array.isArray(list)){
+        PROJECTS=list.map(p=>typeof p==='string'?{name:p,active:true}:p);
+        buildProjects();
+        if(selId) buildDetail();
+        toast('Projects synced',`${PROJECTS.length} project${PROJECTS.length!==1?'s':''} loaded`,'success');
+        loaded=true;
+        break;
+      }
+    }catch(e){}
   }
+  if(!loaded) toast('Sync failed','No project data returned — check n8n WF-6 and Worker /projects route','error');
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh" aria-hidden="true"></i> Sync from Sheets';}
 }
 
 function openProjectsSheet(){
-  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!=='https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0'){
+  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!==''){
     window.open(PROJECTS_SHEET_URL, '_blank');
   } else {
     toast('Not configured','PROJECTS_SHEET_URL not set in Netlify env vars','info');
@@ -1218,8 +1228,10 @@ function buildDetail(){
   const h=ch(t.c), c=comp(t), p=Math.round(c/COMP_TOTAL*100);
   const hasRc = !!(t.rc||t.rc_url);
   const rcVal = t.rc_url
-    ? `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal)">View receipt ↗</a>`
-    : (hasRc ? 'Uploaded ✓' : '');
+    ? (t.rc_url.startsWith('data:')
+        ? `<a href="${t.rc_url}" download="receipt_${t.id}" style="color:var(--teal);text-decoration:none;font-size:12px"><i class="ti ti-download" style="font-size:11px"></i> Download</a>`
+        : `<a href="${t.rc_url}" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:none;font-size:12px"><i class="ti ti-external-link" style="font-size:11px"></i> View receipt</a>`)
+    : (hasRc ? '<span style="font-size:12px;color:var(--teal)">Uploaded ✓</span>' : '');
   const isPushed = effectiveSt(t)==='pushed';
   // Build project options for dropdown
   const projOpts = PROJECTS.filter(p=>p.active!==false).map(p=>
@@ -1298,14 +1310,15 @@ function buildDetail(){
       <!-- RECEIPT row -->
       <div style="display:grid;grid-template-columns:90px 1fr 28px;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bdr)">
         <div style="font-size:11px;color:var(--t3);font-weight:500">Receipt</div>
-        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap">
           ${hasRc
-            ? `<span style="font-size:12px;color:var(--teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rcVal}</span>`
+            ? rcVal
             : `<span style="font-size:12px;color:var(--t3)">Awaiting…</span>`}
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:var(--blue);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:2px 7px;background:rgba(96,165,250,.07);white-space:nowrap;flex-shrink:0" title="Upload receipt">
             <i class="ti ti-upload" style="font-size:12px" aria-hidden="true"></i> Upload
             <input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadReceipt('${t.id}',this)">
           </label>
+          ${hasRc?`<button class="btn btn-sm" style="color:var(--red);border-color:rgba(239,68,68,.3);padding:2px 7px;font-size:11px" onclick="removeReceipt('${t.id}')" title="Remove receipt"><i class="ti ti-trash" style="font-size:11px"></i></button>`:''}
         </div>
         <div style="display:flex;justify-content:center">
           ${hasRc
@@ -1408,30 +1421,60 @@ async function uploadReceipt(txnId, input){
   };
   reader.readAsDataURL(file);
 }
+
+async function removeReceipt(txnId){
+  const t=TX.find(x=>x.id===txnId);
+  if(!t) return;
+  const prevRc=t.rc, prevUrl=t.rc_url;
+  t.rc=false; t.rc_url='';
+  updStats();buildDetail();buildSheet();buildRecent();buildAttention();
+  toast('Receipt removed','Receipt detached from transaction','info');
+  if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
+    try{
+      const r=await fetch(DASHBOARD_DATA_URL,{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+        body:JSON.stringify({txn_id:txnId,field:'receipt',value:''})
+      });
+      const d=await r.json();
+      if(!r.ok||d.error){
+        t.rc=prevRc; t.rc_url=prevUrl;
+        updStats();buildDetail();buildSheet();
+        toast('Sync failed','Could not remove receipt from sheet','error');
+      }
+    }catch(e){ /* non-fatal — local state already cleared */ }
+  }
+}
+
 async function saveField(txnId, field, value, txField){
   const t=TX.find(x=>x.id===txnId);
   if(!t) return;
   const prev=t[txField];
   if(value===prev||(value===''&&!prev)) return; // no change
+  const prevSt=t.st;
   t[txField]=value;
-  updStats();buildSheet();buildRecent();buildAttention();
+  // Sync effective status change to partial if applicable
+  const eSt=effectiveSt(t);
+  if((prevSt==='pending'||prevSt==='notified')&&eSt==='partial') t.st='partial';
+  updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
-    const r=await fetch(DASHBOARD_DATA_URL,{
-      method:'PATCH',
-      headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
-      body:JSON.stringify({txn_id:txnId, field, value})
-    });
-    const d=await r.json();
-    if(!r.ok||d.error){
-      t[txField]=prev;
-      toast('Sync failed',d.error||'Could not update sheet','error');
-    } else {
-      toast('Saved',`${field.replace(/_/g,' ')} updated`,'success');
+    const patches=[{txn_id:txnId, field, value}];
+    if(t.st!==prevSt) patches.push({txn_id:txnId, field:'status', value:t.st});
+    for(const p of patches){
+      const r=await fetch(DASHBOARD_DATA_URL,{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+        body:JSON.stringify(p)
+      });
+      const d=await r.json();
+      if(!r.ok||d.error) throw new Error(d.error||'HTTP '+r.status);
     }
+    toast('Saved',`${field.replace(/_/g,' ')} updated`,'success');
   }catch(e){
-    t[txField]=prev;
-    toast('Sync failed','Network error: '+e.message,'error');
+    t[txField]=prev; t.st=prevSt;
+    updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+    toast('Sync failed',e.message||'Network error','error');
   }
 }
 
@@ -1690,7 +1733,7 @@ function buildRecent(){
     <div class="txnitem" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0" style="cursor:pointer">
       ${av(t.c,32)}
       <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name} · ${t.tm||''}</div></div>
-      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
+      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
       <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
 }
@@ -2071,10 +2114,11 @@ async function loadDashboardData(silent=false){
       return;
     }
 
-    // Populate global TX and H, then re-render everything
+    // Populate global TX, H, and PROJECTS, then re-render everything
     TX=d.transactions||[];
     const newH=d.cardholders||{};
     Object.keys(newH).forEach(k=>{H[k]=newH[k];});
+    if(d.projects&&d.projects.length) PROJECTS=d.projects;
 
     // Update SYS_STATUS counts now that we have real data
     SYS_STATUS.txnCount=TX.length;
@@ -2086,6 +2130,7 @@ async function loadDashboardData(silent=false){
     buildList();
     buildRecent();
     buildAttention();
+    if(PROJECTS.length) buildProjects();
 
     // Update overview dot label with sync time
     const ovLbl=document.getElementById('dot-overview-lbl');
@@ -2122,13 +2167,29 @@ initSysStatus();
 // initCharts() runs inside loadDashboardData() after data is available
 loadDashboardData(false);
 // Auto-sync projects from Sheets on load (silent — no toast on success)
-if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
-  const _projUrl=DASHBOARD_DATA_URL.replace(/\/dashboard-data.*$/,'/projects');
-  fetch(_projUrl+'?_nc='+Date.now(),{cache:'no-store'})
-    .then(r=>r.ok?r.json():null)
-    .then(d=>{if(d&&d.projects){PROJECTS=d.projects;buildProjects();}})
-    .catch(()=>{});
-}
+(async function initProjects(){
+  // Try dashboard-data /projects endpoint first, then PROJECTS_WEBHOOK_URL
+  const urls=[];
+  if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%'))
+    urls.push(DASHBOARD_DATA_URL.replace(/\/[^/]*$/,'/projects'));
+  if(PROJECTS_WEBHOOK_URL&&!PROJECTS_WEBHOOK_URL.startsWith('%%'))
+    urls.push(PROJECTS_WEBHOOK_URL+'?action=list');
+  for(const url of urls){
+    try{
+      const r=await fetch(url+'?_nc='+Date.now(),{cache:'no-store'});
+      if(!r.ok) continue;
+      const d=await r.json();
+      const list=d.projects||d.data||d;
+      if(Array.isArray(list)&&list.length){
+        PROJECTS=list.map(p=>typeof p==='string'?{name:p,active:true}:p);
+        buildProjects();
+        // Re-render detail panel so project dropdown gets populated
+        if(selId) buildDetail();
+        break;
+      }
+    }catch(e){}
+  }
+})();
 </script>
 </body>
 </html>
