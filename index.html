@@ -886,7 +886,7 @@ const QB_PUSH_SECRET          = '0ad2dbb851b04552f4bb3ec34a402abd833905fa6646575
 const SHEETS_URL              = 'https://docs.google.com/spreadsheets/d/1lM3WMabIbzWc9s5pWv9qkMBn5SVaCPe8AYKeHwxegUg/edit';
 const PROJECTS_WEBHOOK_URL    = 'https://n8n-space.byp-app.workers.dev/webhook/projects';
 const PROJECTS_WEBHOOK_SECRET = '61fffb85d3926299c5113f1e6a6cc10cde0092c18681ea6f7681132f0d411a17';
-const PROJECTS_SHEET_URL      = '';
+const PROJECTS_SHEET_URL      = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0';
 const N8N_STATUS_URL          = 'https://n8n-space.byp-app.workers.dev/workflow-status';
 const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard-data'; // Worker /dashboard-data endpoint
 const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa'; // shared secret for write-back
@@ -1173,7 +1173,7 @@ async function syncProjectsFromSheets(){
 }
 
 function openProjectsSheet(){
-  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!==''){
+  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!=='https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0'){
     window.open(PROJECTS_SHEET_URL, '_blank');
   } else {
     toast('Not configured','PROJECTS_SHEET_URL not set in Netlify env vars','info');
