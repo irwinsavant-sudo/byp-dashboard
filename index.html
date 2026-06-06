@@ -1394,56 +1394,183 @@ async function markPending(id){
   }
 }
 
-async function uploadReceipt(txnId, input){
-  const file=input.files[0];
-  if(!file) return;
-  const t=TX.find(x=>x.id===txnId);
-  if(!t) return;
-  // Convert to base64 for inline preview / storage
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    const dataUrl=e.target.result;
-    t.rc=true;
-    t.rc_url=dataUrl; // local preview; replace with remote URL if backend supports it
-    updStats();buildDetail();buildSheet();
-    toast('Receipt','Receipt attached to transaction','success');
-    // If backend supports upload, POST here; for now just local
-    if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
-      try{
-        const r=await fetch(DASHBOARD_DATA_URL,{
-          method:'PATCH',
-          headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
-          body:JSON.stringify({txn_id:txnId,field:'receipt',value:'uploaded'})
-        });
-        const d=await r.json();
-        if(!r.ok||d.error) toast('Sync note','Receipt attached locally — sheet sync partial','info');
-      }catch(e){ /* non-fatal */ }
+// ─── RECEIPT UPLOAD ──────────────────────────────────────────────────────────
+// Pending upload state — held while duplicate modal is open
+let _pendingUpload = null;
+
+async function uploadReceipt(txnId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  // Reset input so the same file can be re-selected after cancel
+  input.value = '';
+
+  const t = TX.find(x => x.id === txnId);
+  if (!t) return;
+
+  if (!DASHBOARD_DATA_URL || DASHBOARD_DATA_URL.startsWith('%%')) {
+    toast('Not configured', 'DASHBOARD_DATA_URL not set — cannot upload receipt', 'error');
+    return;
+  }
+
+  const uploadUrl = DASHBOARD_DATA_URL.replace(/\/[^/]*$/, '/upload-receipt');
+
+  // Convert file to base64
+  const b64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = e => res(e.target.result);
+    r.onerror = () => rej(new Error('File read failed'));
+    r.readAsDataURL(file);
+  });
+
+  // Sanitize filename: receipt_{txn_id}.{ext}
+  const ext      = file.name.split('.').pop().toLowerCase() || 'jpg';
+  const filename = `receipt_${txnId}.${ext}`;
+
+  // Check for existing Drive file before uploading
+  toast('Checking…', 'Looking for existing receipt in Drive…', 'info');
+  let existing = [];
+  try {
+    const checkRes = await fetch(
+      `${uploadUrl}?txn_id=${encodeURIComponent(txnId)}`,
+      { headers: { 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' } }
+    );
+    if (checkRes.ok) {
+      const cd = await checkRes.json();
+      existing = cd.files || [];
     }
-  };
-  reader.readAsDataURL(file);
+  } catch (_) {}
+
+  if (existing.length > 0) {
+    // Show duplicate modal — pause upload until user decides
+    _pendingUpload = { txnId, filename, mime: file.type, b64, uploadUrl, existingFile: existing[0] };
+    showReceiptDupeModal(existing[0], b64, file.name);
+    return;
+  }
+
+  await _doReceiptUpload(txnId, filename, file.type, b64, uploadUrl, null);
 }
 
-async function removeReceipt(txnId){
-  const t=TX.find(x=>x.id===txnId);
-  if(!t) return;
-  const prevRc=t.rc, prevUrl=t.rc_url;
-  t.rc=false; t.rc_url='';
-  updStats();buildDetail();buildSheet();buildRecent();buildAttention();
-  toast('Receipt removed','Receipt detached from transaction','info');
-  if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
-    try{
-      const r=await fetch(DASHBOARD_DATA_URL,{
-        method:'PATCH',
-        headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
-        body:JSON.stringify({txn_id:txnId,field:'receipt',value:''})
-      });
-      const d=await r.json();
-      if(!r.ok||d.error){
-        t.rc=prevRc; t.rc_url=prevUrl;
-        updStats();buildDetail();buildSheet();
-        toast('Sync failed','Could not remove receipt from sheet','error');
-      }
-    }catch(e){ /* non-fatal — local state already cleared */ }
+async function _doReceiptUpload(txnId, filename, mimeType, b64, uploadUrl, replaceFileId) {
+  const t = TX.find(x => x.id === txnId);
+  if (!t) return;
+
+  toast('Uploading…', 'Sending receipt to Google Drive…', 'info');
+  try {
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
+      body: JSON.stringify({ txn_id: txnId, filename, mime_type: mimeType, data: b64, replace_file_id: replaceFileId || undefined }),
+    });
+    const d = await res.json();
+    if (!res.ok || d.error) throw new Error(d.error || 'Upload failed');
+    t.rc = true;
+    t.rc_url = d.drive_url;
+    updStats(); buildList(); buildDetail(); buildSheet(); buildRecent(); buildAttention();
+    toast('Receipt saved', 'Uploaded to Drive and linked in sheet', 'success');
+  } catch (err) {
+    toast('Upload failed', err.message, 'error');
+  }
+}
+
+// ─── RECEIPT DUPLICATE MODAL ─────────────────────────────────────────────────
+function showReceiptDupeModal(existingFile, newB64, newOrigName) {
+  const existing = document.getElementById('rcdup-modal');
+  if (existing) existing.remove();
+
+  const existThumb = existingFile.thumbnailLink
+    ? `<img src="${existingFile.thumbnailLink}" style="max-width:100%;max-height:220px;border-radius:6px;object-fit:contain">`
+    : `<div style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:12px;flex-direction:column;gap:6px"><i class="ti ti-file" style="font-size:32px"></i>No preview available</div>`;
+  const newThumb = newB64.startsWith('data:image')
+    ? `<img src="${newB64}" style="max-width:100%;max-height:220px;border-radius:6px;object-fit:contain">`
+    : `<div style="height:140px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:12px;flex-direction:column;gap:6px"><i class="ti ti-file" style="font-size:32px"></i>${newOrigName}</div>`;
+
+  const mod = document.createElement('div');
+  mod.id = 'rcdup-modal';
+  mod.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  mod.innerHTML = `
+    <div style="background:var(--s1);border:1px solid var(--bdr);border-radius:12px;width:min(700px,100%);padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:15px;font-weight:600;color:var(--t1)"><i class="ti ti-copy" style="color:var(--amber);margin-right:6px"></i>Duplicate Receipt Detected</div>
+        <button onclick="closeReceiptDupeModal()" style="background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px">&times;</button>
+      </div>
+      <div style="font-size:12px;color:var(--t3)">A receipt for this transaction already exists in Google Drive. Choose how to proceed:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="background:var(--s2);border:1px solid var(--bdr);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">Existing in Drive</div>
+          <div style="background:var(--s3);border-radius:6px;padding:8px;min-height:140px;display:flex;align-items:center;justify-content:center">${existThumb}</div>
+          <div style="font-size:11px;color:var(--t3)">${existingFile.name}</div>
+          ${existingFile.modifiedTime?`<div style="font-size:10px;color:var(--t3)">Modified: ${new Date(existingFile.modifiedTime).toLocaleString()}</div>`:''}
+          <a href="${existingFile.webViewLink}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue)"><i class="ti ti-external-link" style="font-size:10px"></i> Open in Drive</a>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--bdr);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">New File</div>
+          <div style="background:var(--s3);border-radius:6px;padding:8px;min-height:140px;display:flex;align-items:center;justify-content:center">${newThumb}</div>
+          <div style="font-size:11px;color:var(--t3)">${newOrigName}</div>
+          <div style="font-size:10px;color:var(--t3)">Ready to upload</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn" onclick="closeReceiptDupeModal()" style="color:var(--t2)">Cancel</button>
+        <button class="btn" onclick="receiptDupeRename()" style="color:var(--blue);border-color:rgba(96,165,250,.35)"><i class="ti ti-file-plus"></i> Upload as new file</button>
+        <button class="btn" onclick="receiptDupeReplace()" style="color:var(--amber);border-color:var(--amberRing)"><i class="ti ti-replace"></i> Replace existing</button>
+      </div>
+    </div>`;
+  document.body.appendChild(mod);
+  mod.addEventListener('click', e => { if (e.target === mod) closeReceiptDupeModal(); });
+}
+
+function closeReceiptDupeModal() {
+  const m = document.getElementById('rcdup-modal');
+  if (m) m.remove();
+  _pendingUpload = null;
+}
+
+async function receiptDupeReplace() {
+  if (!_pendingUpload) return;
+  const { txnId, filename, mime, b64, uploadUrl, existingFile } = _pendingUpload;
+  closeReceiptDupeModal();
+  await _doReceiptUpload(txnId, filename, mime, b64, uploadUrl, existingFile.id);
+}
+
+async function receiptDupeRename() {
+  if (!_pendingUpload) return;
+  const { txnId, filename, mime, b64, uploadUrl } = _pendingUpload;
+  // Append timestamp suffix to avoid collision: receipt_txnId_1748000000.ext
+  const parts   = filename.split('.');
+  const ext     = parts.pop();
+  const newName = `${parts.join('.')}_${Math.floor(Date.now()/1000)}.${ext}`;
+  closeReceiptDupeModal();
+  await _doReceiptUpload(txnId, newName, mime, b64, uploadUrl, null);
+}
+
+// ─── RECEIPT REMOVE ──────────────────────────────────────────────────────────
+async function removeReceipt(txnId) {
+  const t = TX.find(x => x.id === txnId);
+  if (!t) return;
+  const prevRc = t.rc, prevUrl = t.rc_url;
+  t.rc = false; t.rc_url = '';
+  updStats(); buildList(); buildDetail(); buildSheet(); buildRecent(); buildAttention();
+
+  if (!DASHBOARD_DATA_URL || DASHBOARD_DATA_URL.startsWith('%%')) return;
+  const uploadUrl = DASHBOARD_DATA_URL.replace(/\/[^/]*$/, '/upload-receipt');
+  try {
+    const r = await fetch(uploadUrl, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
+      body: JSON.stringify({ txn_id: txnId }),
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) {
+      t.rc = prevRc; t.rc_url = prevUrl;
+      updStats(); buildList(); buildDetail(); buildSheet();
+      toast('Sync failed', 'Could not clear receipt from sheet: ' + (d.error || ''), 'error');
+    } else {
+      toast('Receipt removed', 'Link cleared from sheet. File remains in Drive.', 'info');
+    }
+  } catch (e) {
+    t.rc = prevRc; t.rc_url = prevUrl;
+    updStats(); buildList(); buildDetail(); buildSheet();
+    toast('Sync failed', 'Network error: ' + e.message, 'error');
   }
 }
 
