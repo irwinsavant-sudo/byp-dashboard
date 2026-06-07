@@ -916,6 +916,8 @@ const ci = v => v
   ? '<i class="ti ti-circle-check" style="color:var(--teal);font-size:16px" aria-label="Yes"></i>'
   : '<i class="ti ti-circle" style="color:var(--t3);font-size:16px" aria-label="No"></i>';
 const pcolor = p => p===100?'var(--teal)':p>=50?'var(--amber)':'var(--blue)';
+// Escape a value for safe embedding inside an HTML attribute (double-quoted)
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 // Effective display status: if sheet says pending/notified but some fields are filled → Partial
 const effectiveSt = t => {
@@ -1207,7 +1209,7 @@ function buildList(){
     return;
   }
   el.innerHTML=rows.map(t=>`
-    <div class="txnitem${selId===t.id?' sel':''}" onclick="sel('${t.id}')" role="listitem button" tabindex="0" aria-selected="${selId===t.id}">
+    <div class="txnitem${selId===t.id?' sel':''}" data-txn-id="${esc(t.id)}" onclick="sel(this.dataset.txnId)" role="listitem button" tabindex="0" aria-selected="${selId===t.id}">
       ${av(t.c,36)}
       <div>
         <div class="merchant">${t.m}</div>
@@ -1322,9 +1324,9 @@ function buildDetail(){
             : `<span style="font-size:12px;color:var(--t3)">Awaiting…</span>`}
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:var(--blue);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:2px 7px;background:rgba(96,165,250,.07);white-space:nowrap;flex-shrink:0" title="Upload receipt">
             <i class="ti ti-upload" style="font-size:12px" aria-hidden="true"></i> Upload
-            <input type="file" accept="image/*,application/pdf" style="display:none" data-txn-id="${t.id}" onchange="uploadReceipt(this.dataset.txnId,this)">
+            <input type="file" accept="image/*,application/pdf" style="display:none" data-txn-id="${esc(t.id)}" onchange="uploadReceipt(this.dataset.txnId,this)">
           </label>
-          ${hasRc?`<button class="btn btn-sm" style="color:var(--red);border-color:rgba(239,68,68,.3);padding:2px 7px;font-size:11px" data-txn-id="${t.id}" onclick="removeReceipt(this.dataset.txnId)" title="Remove receipt"><i class="ti ti-trash" style="font-size:11px"></i></button>`:''}
+          ${hasRc?`<button class="btn btn-sm" style="color:var(--red);border-color:rgba(239,68,68,.3);padding:2px 7px;font-size:11px" data-txn-id="${esc(t.id)}" onclick="removeReceipt(this.dataset.txnId)" title="Remove receipt"><i class="ti ti-trash" style="font-size:11px"></i></button>`:''}
         </div>
         <div style="display:flex;justify-content:center">
           ${hasRc
@@ -1360,11 +1362,11 @@ function buildDetail(){
     </div>
   </div>
   <div class="dsec" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-sm" data-txn-id="${t.id}" onclick="resend(this.dataset.txnId)"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>
+    <button class="btn btn-sm" data-txn-id="${esc(t.id)}" onclick="resend(this.dataset.txnId)"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>
     ${!isPushed
       ? (effectiveSt(t)==='complete'
-          ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" data-txn-id="${t.id}" onclick="markPending(this.dataset.txnId)"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
-          : `<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" data-txn-id="${t.id}" onclick="markDone(this.dataset.txnId)"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`)
+          ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" data-txn-id="${esc(t.id)}" onclick="markPending(this.dataset.txnId)"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
+          : `<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" data-txn-id="${esc(t.id)}" onclick="markDone(this.dataset.txnId)"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`)
       : ''}
     ${isPushed?`<span style="font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="ti ti-brand-quickbooks" style="color:var(--teal)"></i> Pushed to QuickBooks</span>`:''}
   </div>`;
@@ -1863,7 +1865,7 @@ function buildRecent(){
   const recent=TX.slice(0,5);
   if(!recent.length){el.innerHTML='<div class="dempty"><i class="ti ti-inbox"></i><span>No transactions yet</span></div>';return;}
   el.innerHTML=recent.map(t=>`
-    <div class="txnitem" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0" style="cursor:pointer">
+    <div class="txnitem" data-txn-id="${esc(t.id)}" onclick="go('feed');sel(this.dataset.txnId)" role="button" tabindex="0" style="cursor:pointer">
       ${av(t.c,32)}
       <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name} · ${t.tm||''}</div></div>
       <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
@@ -1875,7 +1877,7 @@ function buildAttention(){
   const pend=TX.filter(t=>t.st==='pending'||t.st==='notified');
   if(!pend.length){el.innerHTML='<div style="padding:24px 16px;text-align:center;color:var(--t3);font-size:13px"><i class="ti ti-circle-check" style="color:var(--teal);font-size:28px;display:block;margin-bottom:8px"></i>All caught up!</div>';return;}
   el.innerHTML=pend.map(t=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" onclick="go('feed');sel('${t.id}')" role="button" tabindex="0">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" data-txn-id="${esc(t.id)}" onclick="go('feed');sel(this.dataset.txnId)" role="button" tabindex="0">
       ${av(t.c,28)}
       <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.m}</div><div style="font-size:11px;color:var(--t3)">${ch(t.c).name} · ${fmt(t.a)}</div></div>
       ${badge(effectiveSt(t))}
@@ -2265,7 +2267,7 @@ async function loadDashboardData(silent=false){
     TX=d.transactions||[];
     const newH=d.cardholders||{};
     Object.keys(newH).forEach(k=>{H[k]=newH[k];});
-    if(d.projects&&d.projects.length) PROJECTS=d.projects;
+    if(d.projects&&d.projects.length){ PROJECTS=d.projects; setSyncStatus('synced'); }
 
     // Update SYS_STATUS counts now that we have real data
     SYS_STATUS.txnCount=TX.length;
@@ -2331,6 +2333,7 @@ loadDashboardData(false);
       if(Array.isArray(list)&&list.length){
         PROJECTS=list.map(p=>typeof p==='string'?{name:p,active:true}:p);
         buildProjects();
+        setSyncStatus('synced');
         // Re-render detail panel so project dropdown gets populated
         if(selId) buildDetail();
         break;
