@@ -122,7 +122,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .chip.on{border-color:var(--amberRing);background:var(--amberDim);color:var(--amber)}
 
 /* ── TRANSACTION LIST ────────────────── */
-.txnitem{display:grid;grid-template-columns:42px 1fr 110px 90px;gap:10px;align-items:center;padding:12px 16px;cursor:pointer;border-left:3px solid transparent;border-bottom:1px solid var(--bdr);transition:background .1s}
+.txnitem{display:grid;grid-template-columns:42px 1fr 110px auto;gap:10px;align-items:center;padding:12px 16px;cursor:pointer;border-left:3px solid transparent;border-bottom:1px solid var(--bdr);transition:background .1s}
 .txnitem:last-child{border-bottom:none}
 .txnitem:hover{background:var(--s2)}
 .txnitem:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
@@ -286,7 +286,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   :root{--nav:0px}
   .sidebar{display:none}
   .statgrid{grid-template-columns:1fr 1fr}
-  .txnitem{grid-template-columns:36px 1fr 90px 80px}
+  .txnitem{grid-template-columns:36px 1fr 90px auto}
 }
 
 /* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
@@ -1142,7 +1142,7 @@ async function syncProjectsFromSheets(){
   if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader spin" aria-hidden="true"></i> Syncing…';}
   const urls=[];
   if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%'))
-    urls.push(DASHBOARD_DATA_URL.replace(/\/[^/]*$/,'/projects'));
+    urls.push(DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '') + '/projects');
   if(PROJECTS_WEBHOOK_URL&&!PROJECTS_WEBHOOK_URL.startsWith('%%'))
     urls.push(PROJECTS_WEBHOOK_URL);
   if(!urls.length){
@@ -1249,8 +1249,13 @@ function buildDetail(){
   <div class="dsec">
     <div style="display:flex;align-items:center;gap:12px">
       ${av(t.c,44)}
-      <div style="flex:1"><div style="font-size:15px;font-weight:700">${h.name}</div><div style="font-size:11px;color:var(--t3)">${h.role} · Card ••••${t.c} · ${t.id}</div></div>
-      ${badge(effectiveSt(t))}
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="font-size:15px;font-weight:700">${h.name}</div>
+          ${badge(effectiveSt(t))}
+        </div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">${h.role} · Card ••••${t.c} · <span style="font-size:10px;opacity:.6">${t.id}</span></div>
+      </div>
     </div>
   </div>
   <div class="dsec">
@@ -1317,9 +1322,9 @@ function buildDetail(){
             : `<span style="font-size:12px;color:var(--t3)">Awaiting…</span>`}
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:var(--blue);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:2px 7px;background:rgba(96,165,250,.07);white-space:nowrap;flex-shrink:0" title="Upload receipt">
             <i class="ti ti-upload" style="font-size:12px" aria-hidden="true"></i> Upload
-            <input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadReceipt('${t.id}',this)">
+            <input type="file" accept="image/*,application/pdf" style="display:none" data-txn-id="${t.id}" onchange="uploadReceipt(this.dataset.txnId,this)">
           </label>
-          ${hasRc?`<button class="btn btn-sm" style="color:var(--red);border-color:rgba(239,68,68,.3);padding:2px 7px;font-size:11px" onclick="removeReceipt('${t.id}')" title="Remove receipt"><i class="ti ti-trash" style="font-size:11px"></i></button>`:''}
+          ${hasRc?`<button class="btn btn-sm" style="color:var(--red);border-color:rgba(239,68,68,.3);padding:2px 7px;font-size:11px" data-txn-id="${t.id}" onclick="removeReceipt(this.dataset.txnId)" title="Remove receipt"><i class="ti ti-trash" style="font-size:11px"></i></button>`:''}
         </div>
         <div style="display:flex;justify-content:center">
           ${hasRc
@@ -1355,11 +1360,11 @@ function buildDetail(){
     </div>
   </div>
   <div class="dsec" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-sm" onclick="resend('${t.id}')"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>
+    <button class="btn btn-sm" data-txn-id="${t.id}" onclick="resend(this.dataset.txnId)"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>
     ${!isPushed
       ? (effectiveSt(t)==='complete'
-          ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" onclick="markPending('${t.id}')"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
-          : `<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" onclick="markDone('${t.id}')"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`)
+          ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" data-txn-id="${t.id}" onclick="markPending(this.dataset.txnId)"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
+          : `<button class="btn btn-sm" style="color:var(--teal);border-color:rgba(16,185,129,.3)" data-txn-id="${t.id}" onclick="markDone(this.dataset.txnId)"><i class="ti ti-check" aria-hidden="true"></i> Mark complete</button>`)
       : ''}
     ${isPushed?`<span style="font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="ti ti-brand-quickbooks" style="color:var(--teal)"></i> Pushed to QuickBooks</span>`:''}
   </div>`;
@@ -1412,7 +1417,7 @@ async function uploadReceipt(txnId, input) {
     return;
   }
 
-  const uploadUrl = DASHBOARD_DATA_URL.replace(/\/[^/]*$/, '/upload-receipt');
+  const uploadUrl = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '') + '/upload-receipt';
 
   // Convert file to base64
   const b64 = await new Promise((res, rej) => {
@@ -1552,7 +1557,7 @@ async function removeReceipt(txnId) {
   updStats(); buildList(); buildDetail(); buildSheet(); buildRecent(); buildAttention();
 
   if (!DASHBOARD_DATA_URL || DASHBOARD_DATA_URL.startsWith('%%')) return;
-  const uploadUrl = DASHBOARD_DATA_URL.replace(/\/[^/]*$/, '/upload-receipt');
+  const uploadUrl = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '') + '/upload-receipt';
   try {
     const r = await fetch(uploadUrl, {
       method: 'DELETE',
@@ -2153,21 +2158,35 @@ function syncSysdotsFromWFs(){
   applyDot('dot-qb',     _worstState(['WF5']));
   const badge=document.getElementById('netlify-live-badge');
   if(badge) badge.style.display=wf1State==='on'?'inline':'none';
+
+  // Derive coreOn from actual WF state, not stale SYS_STATUS
+  const coreOn = wf1State === 'on';
+
+  // Update SYS_STATUS so initSysStatus-style checks stay consistent
+  SYS_STATUS.n8n   = coreOn ? 'on' : 'off';
+  SYS_STATUS.plaid = coreOn ? 'on' : 'off';
+
+  // Update all live labels
+  ['dot-overview','dot-recent','dot-feed'].forEach(id => applyDot(id, coreOn ? 'on' : wf1State));
+
+  const syncTime = SYS_STATUS.syncTs
+    ? ' — last sync ' + new Date(SYS_STATUS.syncTs).toLocaleTimeString()
+    : '';
+
+  const ovLbl = document.getElementById('dot-overview-lbl');
+  if(ovLbl) ovLbl.textContent = coreOn
+    ? 'Live' + syncTime
+    : wf1State === 'err' ? 'n8n unreachable — check HF Space' : 'Not connected — complete setup to see live data';
+
+  const feedLbl = document.getElementById('dot-feed-lbl');
+  if(feedLbl) feedLbl.textContent = coreOn ? 'Live' : wf1State === 'err' ? 'n8n unreachable' : 'Not connected';
 }
 
 function initSysStatus(){
-  const coreOn=SYS_STATUS.n8n==='on'&&SYS_STATUS.plaid==='on';
-  ['dot-overview','dot-recent','dot-feed'].forEach(id=>applyDot(id,coreOn?'on':'off'));
-  const ovLbl=document.getElementById('dot-overview-lbl');
-  if(ovLbl) ovLbl.textContent=coreOn?'Live — last sync '+new Date(SYS_STATUS.syncTs).toLocaleTimeString():'Not connected — complete setup to see live data';
-  const feedLbl=document.getElementById('dot-feed-lbl');
-  if(feedLbl) feedLbl.textContent=coreOn?'Live':'Not connected';
-  const wfDot=document.getElementById('dot-workflow');
-  const wfLbl=document.getElementById('dot-workflow-lbl');
-  if(wfDot) wfDot.className=`sysdot ${coreOn?'on':'off'}`;
-  if(wfLbl) wfLbl.textContent=coreOn?`Active — ${SYS_STATUS.txnCount} txns, ${SYS_STATUS.cardCount} cards`:'Not connected — complete setup to activate';
+  // Labels start as "Not connected" via HTML defaults.
+  // pollN8nStatus will call syncSysdotsFromWFs which updates everything once data arrives.
   pollN8nStatus();
-  setInterval(pollN8nStatus,90000);
+  setInterval(pollN8nStatus, 90000);
 }
 
 async function pollN8nStatus(){
@@ -2299,7 +2318,7 @@ loadDashboardData(false);
   // Try dashboard-data /projects endpoint first, then PROJECTS_WEBHOOK_URL
   const urls=[];
   if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%'))
-    urls.push(DASHBOARD_DATA_URL.replace(/\/[^/]*$/,'/projects'));
+    urls.push(DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '') + '/projects');
   if(PROJECTS_WEBHOOK_URL&&!PROJECTS_WEBHOOK_URL.startsWith('%%'))
     urls.push(PROJECTS_WEBHOOK_URL+'?action=list');
   for(const url of urls){
