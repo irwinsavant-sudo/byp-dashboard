@@ -1469,6 +1469,7 @@ async function _doReceiptUpload(txnId, filename, mimeType, b64, uploadUrl, repla
       body: JSON.stringify({ txn_id: txnId, filename, mime_type: mimeType, data: b64, replace_file_id: replaceFileId || undefined }),
     });
     const d = await res.json();
+    console.error('[receipt POST]', res.status, JSON.stringify(d));
     if (!res.ok || d.error) throw new Error(d.error || 'Upload failed');
     t.rc = true;
     t.rc_url = d.drive_url;
