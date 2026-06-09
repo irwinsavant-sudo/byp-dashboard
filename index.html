@@ -880,6 +880,8 @@ const SYNC_TS = '';
 // SHEETS_URL           — Google Sheets master URL for "Open in Sheets"
 // PROJECTS_WEBHOOK_URL — n8n WF-6 webhook URL for add/remove project actions
 // PROJECTS_SHEET_URL   — Direct link to the Projects tab in Google Sheets
+// REMIND_WEBHOOK_URL   — n8n WF-2b webhook URL for accountant-triggered reminders
+// REMIND_WEBHOOK_SECRET— shared secret for WF-2b remind endpoint
 // DATA:WEBHOOK:START
 const QB_PUSH_URL             = 'https://n8n-space.byp-app.workers.dev/webhook/qb-push';
 const QB_PUSH_SECRET          = '0ad2dbb851b04552f4bb3ec34a402abd833905fa66465753634204caa1e9eb9e';
@@ -890,6 +892,8 @@ const PROJECTS_SHEET_URL      = 'https://docs.google.com/spreadsheets/d/1SPZEQUF
 const N8N_STATUS_URL          = 'https://n8n-space.byp-app.workers.dev/workflow-status';
 const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard-data'; // Worker /dashboard-data endpoint
 const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa'; // shared secret for write-back
+const REMIND_WEBHOOK_URL      = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';   // WF-2b: accountant-triggered remind
+const REMIND_WEBHOOK_SECRET   = '868875f9c928fe2f139b5361f9e7059e86e938c3c3d970a61fb61750f45c6df8'; // shared secret for WF-2b
 // DATA:WEBHOOK:END
 
 let selId=null, cfilt='ALL', sFilter='ALL';
@@ -1371,7 +1375,29 @@ function buildDetail(){
     ${isPushed?`<span style="font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="ti ti-brand-quickbooks" style="color:var(--teal)"></i> Pushed to QuickBooks</span>`:''}
   </div>`;
 }
-function resend(id){const t=TX.find(x=>x.id===id);toast('Slack','Reminder sent to '+ch(t.c).name+' via n8n → Slack','info');}
+async function resend(id){
+  const t=TX.find(x=>x.id===id);
+  if(!t) return;
+  if(!REMIND_WEBHOOK_URL||REMIND_WEBHOOK_URL.startsWith('%%')){
+    toast('Config missing','REMIND_WEBHOOK_URL not set in deploy env','error'); return;
+  }
+  const btn=document.querySelector('.btn[data-txn-id="'+id+'"]');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Sending...';}
+  try{
+    const r=await fetch(REMIND_WEBHOOK_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Remind-Secret':REMIND_WEBHOOK_SECRET||''},
+      body:JSON.stringify({txn_id:t.id,card_last4:t.c,merchant:t.m,amount:t.a})
+    });
+    const d=await r.json();
+    if(!r.ok||d.error) throw new Error(d.error||'Webhook returned non-OK');
+    toast('Slack','Reminder sent to '+ch(t.c).name,'info');
+  }catch(e){
+    toast('Send failed',e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack';}
+  }
+}
 
 async function markPending(id){
   const t=TX.find(x=>x.id===id);
