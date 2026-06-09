@@ -1389,8 +1389,9 @@ async function resend(id){
       headers:{'Content-Type':'application/json','X-Remind-Secret':REMIND_WEBHOOK_SECRET||''},
       body:JSON.stringify({txn_id:t.id,card_last4:t.c,merchant:t.m,amount:t.a})
     });
-    const d=await r.json();
-    if(!r.ok||d.error) throw new Error(d.error||'Webhook returned non-OK');
+    let d={};
+    try{ d=await r.json(); } catch(_){ /* non-JSON body — treat as ok if status 200 */ }
+    if(!r.ok||d.error) throw new Error(d.error||`Webhook responded ${r.status}`);
     toast('Slack','Reminder sent to '+ch(t.c).name,'info');
   }catch(e){
     toast('Send failed',e.message,'error');
