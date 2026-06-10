@@ -2308,6 +2308,7 @@ async function loadDashboardData(silent=false){
     buildRecent();
     buildAttention();
     if(PROJECTS.length) buildProjects();
+    if(selId) buildDetail(); // refresh detail panel with latest data
 
     // Update overview dot label with sync time
     const ovLbl=document.getElementById('dot-overview-lbl');
@@ -2332,8 +2333,8 @@ async function loadDashboardData(silent=false){
   try{ initCharts(); }catch(e){ console.error('initCharts failed:',e.message); }
 }
 
-// Poll for fresh data every 5 minutes
-setInterval(()=>loadDashboardData(true), 5*60*1000);
+// Poll for fresh data every 30 seconds
+setInterval(()=>loadDashboardData(true), 30*1000);
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 tick(); setInterval(tick,1000);
