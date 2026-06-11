@@ -1374,6 +1374,32 @@ function buildDetail(){
       : ''}
     ${isPushed?`<span style="font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="ti ti-brand-quickbooks" style="color:var(--teal)"></i> Pushed to QuickBooks</span>`:''}
   </div>`;
+  // ── Fetch live Slack thread if we have channel + ts ──────────────────────
+  if (t.sc && t.sts) {
+    const threadDiv = de.querySelector('.slackthread');
+    if (threadDiv) {
+      threadDiv.innerHTML = '<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px;font-style:italic">Loading thread…</div>';
+      const workerBase = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '');
+      fetch(`${workerBase}/slack-thread?channel=${encodeURIComponent(t.sc)}&ts=${encodeURIComponent(t.sts)}`, {
+        headers: { 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok || !data.thread || !data.thread.length) {
+          threadDiv.innerHTML = '<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px;font-style:italic">No thread messages yet.</div>';
+          return;
+        }
+        threadDiv.innerHTML = data.thread.map(m => `
+          <div class="slackmsg">
+            <div class="av" style="width:26px;height:26px;flex-shrink:0;background:${m.f==='b'?'#1B3A5C':h.bg};color:${m.f==='b'?'#93C5FD':h.col};font-size:10px;font-weight:700" aria-hidden="true">${m.f==='b'?'⚡':h.init}</div>
+            <div class="slackbubble">${m.t||''}</div>
+          </div>`).join('');
+      })
+      .catch(() => {
+        threadDiv.innerHTML = '<div style="font-size:11px;color:var(--red);text-align:center;padding:8px">Could not load thread.</div>';
+      });
+    }
+  }
 }
 async function resend(id){
   const t=TX.find(x=>x.id===id);
