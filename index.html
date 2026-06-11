@@ -1361,7 +1361,7 @@ function buildDetail(){
     </div>
   </div>` : ''}
   <div class="dsec" style="display:flex;gap:8px;flex-wrap:wrap">
-    ${effectiveSt(t)!=='complete'&&!isPushed ? `<button class="btn btn-sm" data-txn-id="${esc(t.id)}" onclick="resend(this.dataset.txnId)"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>` : ''}
+    ${effectiveSt(t)!=='complete'&&!isPushed ? `<button class="btn btn-sm${t.st==='pending'?' btn-amber':''}" data-txn-id="${esc(t.id)}" onclick="resend(this.dataset.txnId)"><i class="ti ti-brand-slack" aria-hidden="true"></i> ${t.st==='pending'?'Notify via Slack':'Resend to Slack'}</button>` : ''}
     ${!isPushed
       ? (effectiveSt(t)==='complete'
           ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" data-txn-id="${esc(t.id)}" onclick="markPending(this.dataset.txnId)"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
@@ -1399,11 +1399,13 @@ function buildDetail(){
 async function resend(id){
   const t=TX.find(x=>x.id===id);
   if(!t) return;
+  const isFirst = t.st==='pending'; // first-ever notification
   if(!REMIND_WEBHOOK_URL||REMIND_WEBHOOK_URL.startsWith('%%')){
     toast('Config missing','REMIND_WEBHOOK_URL not set in deploy env','error'); return;
   }
   const btn=document.querySelector('.btn[data-txn-id="'+id+'"]');
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Sending...';}
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spin"></i> Sending...';}
+  let success=false;
   try{
     const r=await fetch(REMIND_WEBHOOK_URL,{
       method:'POST',
@@ -1413,11 +1415,26 @@ async function resend(id){
     let d={};
     try{ d=await r.json(); } catch(_){ /* non-JSON body — treat as ok if status 200 */ }
     if(!r.ok||d.error) throw new Error(d.error||`Webhook responded ${r.status}`);
-    toast('Slack','Reminder sent to '+ch(t.c).name,'info');
+    success=true;
+    if(isFirst){
+      t.st='notified';
+      if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
+        fetch(DASHBOARD_DATA_URL,{
+          method:'PATCH',
+          headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+          body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
+        }).catch(()=>{});
+      }
+    }
+    toast('Slack',isFirst?'Notification sent to '+ch(t.c).name:'Reminder sent to '+ch(t.c).name,'info');
   }catch(e){
     toast('Send failed',e.message,'error');
   }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack';}
+    if(success){
+      updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+    } else {
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brand-slack" aria-hidden="true"></i> '+(isFirst?'Notify via Slack':'Resend to Slack');}
+    }
   }
 }
 
@@ -1425,14 +1442,14 @@ async function markPending(id){
   const t=TX.find(x=>x.id===id);
   if(!t||t.st==='pushed') return;
   const prev=t.st;
-  t.st='pending';
+  t.st='notified';
   updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
     const r=await fetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
       headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
-      body:JSON.stringify({txn_id:t.id,field:'status',value:'pending'})
+      body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
     });
     const d=await r.json();
     if(!r.ok||d.error){
