@@ -138,6 +138,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 
 /* ── LIVE FEED LAYOUT ────────────────── */
 .feedlayout{display:grid;grid-template-columns:1fr 340px;gap:12px;align-items:start}
+#detailwrap{position:sticky;top:22px;max-height:calc(100vh - var(--hdr) - 44px);overflow-y:auto;}
 
 /* ── DETAIL PANEL ────────────────────── */
 .dempty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--t3);gap:10px;text-align:center}
@@ -1380,7 +1381,7 @@ function buildDetail(){
     if (threadDiv) {
       threadDiv.innerHTML = '<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px;font-style:italic">Loading thread…</div>';
       const workerBase = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '');
-      fetch(`${workerBase}/slack-thread?channel=${encodeURIComponent(t.sc)}&ts=${encodeURIComponent(t.sts)}`, {
+      fetch(`${workerBase}/slack-thread?channel=${encodeURIComponent(t.sc)}&ts=${encodeURIComponent(t.sts)}&txn_id=${encodeURIComponent(t.id)}`, {
         headers: { 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
       })
       .then(r => r.json())
