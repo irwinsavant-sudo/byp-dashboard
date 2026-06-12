@@ -1201,18 +1201,16 @@ function buildList(){
   const el=document.getElementById('txnlist');
   const rows=TX
     .filter(t=>cfilt==='ALL'||t.c===cfilt)
-    .filter(t=>sFilter==='ALL'||(sFilter==='needs-attention'?(effectiveSt(t)==='pending'||effectiveSt(t)==='notified'):effectiveSt(t)===sFilter));
+    .filter(t=>sFilter==='ALL'||effectiveSt(t)===sFilter);
   const cl=document.getElementById('txn-count-lbl');
   if(cl){
     const countTxt=`${rows.length} transaction${rows.length!==1?'s':''}`;
-    let badgeHtml='';
-    if(sFilter==='needs-attention') badgeHtml=badge('pending')+badge('notified');
-    else if(sFilter!=='ALL') badgeHtml=badge(sFilter);
+    const badgeHtml=sFilter!=='ALL'?badge(sFilter):'';
     cl.innerHTML=badgeHtml?`${countTxt} — ${badgeHtml}`:countTxt;
   }
   if(!rows.length){
     const msg=TX.length
-      ? (sFilter!=='ALL'?`No ${sFilter==='needs-attention'?'pending/notified':sFilter} transactions`:'No transactions for this card')
+      ? (sFilter!=='ALL'?`No ${sFilter} transactions`:'No transactions for this card')
       : 'Waiting for live data from Plaid…';
     el.innerHTML=`<div class="dempty"><i class="ti ti-inbox" aria-hidden="true"></i><span>${msg}</span></div>`;
     return;
@@ -2098,13 +2096,10 @@ function setSFilter(status, el){
 }
 
 function goToNeedsAttention(){
-  sFilter='needs-attention';
-  const dot=document.getElementById('sf-dot');
-  if(dot) dot.style.display='block';
-  document.querySelectorAll('.sf-opt').forEach(o=>o.classList.remove('on'));
   cfilt='ALL';
   const allChip=document.querySelector('.chip:not([data-card])');
   if(allChip){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));allChip.classList.add('on');}
+  setSFilter('pending', document.getElementById('sfo-pending'));
   go('feed');
 }
 
