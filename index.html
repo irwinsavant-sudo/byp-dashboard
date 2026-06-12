@@ -905,6 +905,8 @@ let dateFrom='', dateTo='', activeDateQuick='all';
 // Safe cardholder lookup — never crashes if card missing from H
 const ch  = card => H[card] || {name:'Unknown',init:'??',col:'#8B9CB8',bg:'#18202E',role:'Cardholder'};
 const fmt = n => '$'+parseFloat((n||0).toString().replace(/[^0-9.-]/g,'')||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate = d => { const m=d&&d.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[2]}/${m[3]}/${m[1].slice(2)}`:(d||''); };
+const fmtTime = t => { const m=t&&t.match(/^(\d{1,2}):(\d{2})/); if(!m)return t||''; let h=parseInt(m[1],10); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${m[2]} ${ap}`; };
 const comp= t => [t.pu, t.pr, t.ac, (t.rc||t.rc_url), t.no].filter(Boolean).length;
 const COMP_TOTAL = 5; // purpose, project, account_category, receipt, notes
 const av  = (card,sz=36) => {
@@ -1220,9 +1222,9 @@ function buildList(){
       ${av(t.c,36)}
       <div>
         <div class="merchant">${t.m}</div>
-        <div class="txnmeta">••••${t.c} · ${ch(t.c).name}${t.tm?' · '+t.tm:''}</div>
+        <div class="txnmeta">••••${t.c} · ${ch(t.c).name}${t.tm?' · '+fmtTime(t.tm):''}</div>
       </div>
-      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${fmtDate(t.dt)}</div></div>
       <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
   el.querySelectorAll('.txnitem').forEach(r=>r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click();}}));
@@ -1272,7 +1274,7 @@ function buildDetail(){
     <div class="dgrid2">
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Merchant</div><div style="font-weight:600;font-size:13px">${t.m}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Amount</div><div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber)">${fmt(t.a)}</div></div>
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${fmtDate(t.dt)}${t.tm?' · '+fmtTime(t.tm):''}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Filing progress</div><div style="font-size:12px;font-weight:600">${c}/${COMP_TOTAL} fields</div><div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div></div>
     </div>
   </div>
@@ -1780,7 +1782,7 @@ function buildSheet(){
     const rb=effectiveSt(t)==='pushed'?'rgba(16,185,129,.03)':effectiveSt(t)==='complete'?'rgba(16,185,129,.05)':effectiveSt(t)==='partial'?'rgba(245,158,11,.04)':'';
     const pct=Math.round(c/COMP_TOTAL*100);
     return `<tr style="${rb?'background:'+rb:''}">
-      <td class="mono" style="font-size:11px;white-space:nowrap">${t.dt}</td>
+      <td class="mono" style="font-size:11px;white-space:nowrap">${fmtDate(t.dt)}</td>
       <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${h.name}</span></div></td>
       <td class="mono" style="font-size:11px;color:var(--t3)">••••${t.c}</td>
       <td style="max-width:130px;font-size:12px">${t.m}</td>
@@ -1822,7 +1824,7 @@ function openQB(){
         <div style="display:flex;align-items:center;gap:10px">${av(t.c,28)}<span style="font-weight:500">${t.m}</span></div>
         <div style="text-align:right">
           <div style="font-family:'JetBrains Mono',monospace;font-weight:700">${fmt(t.a)}</div>
-          <div style="font-size:11px;color:var(--t3)">${t.dt}${t.pr?' · '+t.pr:''}</div>
+          <div style="font-size:11px;color:var(--t3)">${fmtDate(t.dt)}${t.pr?' · '+t.pr:''}</div>
         </div>
       </div>`).join('')
     : `<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No complete transactions${hasRange?' for the selected dates':''}</div>`;
@@ -1937,8 +1939,8 @@ function buildRecent(){
   el.innerHTML=recent.map(t=>`
     <div class="txnitem" data-txn-id="${esc(t.id)}" onclick="go('feed');sel(this.dataset.txnId)" role="button" tabindex="0" style="cursor:pointer">
       ${av(t.c,32)}
-      <div><div class="merchant">${t.m}</div><div class="txnmeta">${ch(t.c).name}${t.tm?' · '+t.tm:''}</div></div>
-      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
+      <div><div class="merchant">${t.m}</div><div class="txnmeta">${ch(t.c).name}${t.tm?' · '+fmtTime(t.tm):''}</div></div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${fmtDate(t.dt)}</div></div>
       <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
 }
