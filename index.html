@@ -362,7 +362,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
       <h1 class="ptitle">Overview</h1>
       <p class="psub" id="datestr">Loading…</p>
     </div>
-    <div class="phdr-actions">
+    <div class="phdr-actions" style="display:flex;align-items:center;gap:14px">
+      <div id="new-txn-card" style="display:none;background:var(--s1);border:1px solid var(--bdr2);border-left:3px solid var(--amber);border-radius:var(--r);padding:10px 14px;min-width:220px;max-width:320px;animation:toastIn .3s ease-out;cursor:pointer" onclick="dismissNewTxnCard()" title="Click to dismiss">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <i class="ti ti-bolt" style="color:var(--amber);font-size:14px"></i>
+          <span style="font-size:12px;font-weight:700;color:var(--amber)">New Transaction</span>
+        </div>
+        <div id="new-txn-card-msg" style="font-size:12px;color:var(--t2);line-height:1.4"></div>
+      </div>
       <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t3)">
         <span class="sysdot off" id="dot-overview" aria-hidden="true"></span> <span id="dot-overview-lbl">Not connected — complete setup to see live data</span>
       </span>
@@ -1991,6 +1998,26 @@ function toast(title,msg,type='info'){
   setTimeout(()=>el.remove(),5500);
 }
 
+// ─── NEW TRANSACTION CARD ────────────────────────────────────────────────────
+let _newTxnTimer = null;
+function showNewTxnCard(msg){
+  const card=document.getElementById('new-txn-card');
+  const msgEl=document.getElementById('new-txn-card-msg');
+  if(!card||!msgEl) return;
+  msgEl.textContent=msg;
+  card.style.display='block';
+  card.style.animation='none';
+  void card.offsetWidth;
+  card.style.animation='toastIn .3s ease-out';
+  if(_newTxnTimer) clearTimeout(_newTxnTimer);
+  _newTxnTimer=setTimeout(dismissNewTxnCard, 8000);
+}
+function dismissNewTxnCard(){
+  const card=document.getElementById('new-txn-card');
+  if(card) card.style.display='none';
+  if(_newTxnTimer){ clearTimeout(_newTxnTimer); _newTxnTimer=null; }
+}
+
 // ─── CHARTS ──────────────────────────────────────────────────────────────────
 function initCharts(){
   Chart.defaults.color='#4F6285';
@@ -2325,7 +2352,7 @@ async function pollN8nStatus(){
   applyDot('dot-workflow',headerState);
   const activeCount=Object.values(wfs).filter(w=>w.active===true).length;
   const wfLbl=document.getElementById('dot-workflow-lbl');
-  if(wfLbl) wfLbl.textContent=`${activeCount}/6 workflows active`;
+  if(wfLbl) wfLbl.textContent=allActive?'All systems operational':`${activeCount}/6 workflows active`;
   syncSysdotsFromWFs();
 }
 
@@ -2344,6 +2371,10 @@ async function loadDashboardData(silent=false){
       if(!silent) toast('Data error',d.error,'error');
       return;
     }
+
+    // Snapshot existing IDs BEFORE overwriting TX so we can detect truly new ones
+    const prevTxIds = new Set(TX.map(t=>t.id));
+    const isFirstLoad = !_lastSyncTs;
 
     // Populate global TX, H, and PROJECTS, then re-render everything
     TX=d.transactions||[];
@@ -2367,18 +2398,22 @@ async function loadDashboardData(silent=false){
     // Update overview dot label with sync time
     const ovLbl=document.getElementById('dot-overview-lbl');
     if(ovLbl&&d.syncTs) ovLbl.textContent='Live — last sync '+new Date(d.syncTs).toLocaleTimeString();
-    const wfLbl=document.getElementById('dot-workflow-lbl');
-    if(wfLbl&&TX.length) wfLbl.textContent=`Active — ${TX.length} txns, ${Object.keys(H).length} cards`;
+    // workflow label is managed by pollN8nStatus — do not override here
 
-    // Toast only on first load or when new transactions arrive
-    if(d.syncTs&&d.syncTs!==_lastSyncTs){
-      if(_lastSyncTs&&d.count>TX.length){
-        toast('New transactions','Dashboard updated with latest Plaid data','success');
-      } else if(!_lastSyncTs&&!silent){
-        toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
+    // Detect new transactions and notify
+    if(!isFirstLoad){
+      const newTxns=TX.filter(t=>!prevTxIds.has(t.id));
+      if(newTxns.length){
+        const t=newTxns[0];
+        const cname=ch(t.c).name||('Card ••••'+t.c);
+        const msg=`${fmt(t.a)} at ${t.m} — Slack sent to ${cname}`;
+        showNewTxnCard(msg);
+        toast('New Transaction',msg,'new-txn');
       }
-      _lastSyncTs=d.syncTs;
+    } else if(!silent){
+      toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
     }
+    if(d.syncTs) _lastSyncTs=d.syncTs;
   }catch(e){
     if(!silent) toast('Connection error','Could not reach Worker: '+e.message,'error');
   }
