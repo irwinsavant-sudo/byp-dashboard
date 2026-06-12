@@ -65,21 +65,21 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .page{padding:22px 24px;display:none}
 .page.active{display:block}
 .phdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:16px}
-.ptitle{font-size:20px;font-weight:700;line-height:1.2}
-.psub{font-size:13px;color:var(--t2);margin-top:4px}
+.ptitle{font-size:22px;font-weight:700;line-height:1.2}
+.psub{font-size:13px;color:var(--t2);margin-top:5px}
 .phdr-actions{display:flex;gap:8px;flex-shrink:0;align-items:center}
 
 /* ── STATS ───────────────────────────── */
-.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
-.statcard{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.statcard{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:20px 22px;position:relative;overflow:hidden}
 .statcard::after{content:'';position:absolute;top:0;right:0;width:3px;height:100%;border-radius:0 var(--r) var(--r) 0}
 .statcard.c-blue::after{background:var(--blue)}
 .statcard.c-teal::after{background:var(--teal)}
 .statcard.c-amber::after{background:var(--amber)}
 .statcard.c-white::after{background:var(--s4)}
-.statlbl{font-size:12px;color:var(--t2);margin-bottom:8px}
-.statval{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:500;line-height:1}
-.statsub{font-size:11px;color:var(--t3);margin-top:5px}
+.statlbl{font-size:12px;color:var(--t2);margin-bottom:10px}
+.statval{font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:500;line-height:1}
+.statsub{font-size:12px;color:var(--t3);margin-top:6px}
 
 /* ── CHARTS ROW ──────────────────────── */
 .chartrow{display:grid;grid-template-columns:1fr 300px;gap:12px;margin-bottom:22px}
@@ -173,7 +173,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .holdercard:hover{border-color:var(--bdr2)}
 .holderhdr{display:flex;align-items:center;gap:12px;margin-bottom:18px}
 .holderstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 0;border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);margin-bottom:14px;text-align:center}
-.hstatval{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600}
+.hstatval{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600}
 .hstatlbl{font-size:10px;color:var(--t3);margin-top:3px}
 
 /* ── WORKFLOW CARDS ──────────────────── */
@@ -421,7 +421,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
     <div class="panel">
       <div class="pnhdr">
         <div class="pntitle"><i class="ti ti-alert-triangle" aria-hidden="true" style="color:var(--amber)"></i> Needs attention</div>
-        <span id="attention-count-badge" style="display:none" class="badge badge-pending"></span>
+        <button id="attention-count-badge" style="display:none;cursor:pointer;border:none;background:none;padding:0;font-family:inherit" class="badge badge-pending" onclick="goToNeedsAttention()" title="View all pending transactions"></button>
       </div>
       <div id="ov-attention" style="padding:4px 0"></div>
     </div>
@@ -1201,15 +1201,15 @@ function buildList(){
   const el=document.getElementById('txnlist');
   const rows=TX
     .filter(t=>cfilt==='ALL'||t.c===cfilt)
-    .filter(t=>sFilter==='ALL'||effectiveSt(t)===sFilter);
+    .filter(t=>sFilter==='ALL'||(sFilter==='needs-attention'?(effectiveSt(t)==='pending'||effectiveSt(t)==='notified'):effectiveSt(t)===sFilter));
   const cl=document.getElementById('txn-count-lbl');
   if(cl){
-    const filterDesc=sFilter!=='ALL'?` · ${sFilter}`:'';
+    const filterDesc=sFilter==='needs-attention'?' · needs attention':sFilter!=='ALL'?` · ${sFilter}`:'';
     cl.textContent=`${rows.length} transaction${rows.length!==1?'s':''}${filterDesc}`;
   }
   if(!rows.length){
     const msg=TX.length
-      ? (sFilter!=='ALL'?`No ${sFilter} transactions`:'No transactions for this card')
+      ? (sFilter!=='ALL'?`No ${sFilter==='needs-attention'?'pending/notified':sFilter} transactions`:'No transactions for this card')
       : 'Waiting for live data from Plaid…';
     el.innerHTML=`<div class="dempty"><i class="ti ti-inbox" aria-hidden="true"></i><span>${msg}</span></div>`;
     return;
@@ -2092,6 +2092,17 @@ function setSFilter(status, el){
   if(dot) dot.style.display=sFilter==='ALL'?'none':'block';
   closeAllPopovers();
   buildList();
+}
+
+function goToNeedsAttention(){
+  sFilter='needs-attention';
+  const dot=document.getElementById('sf-dot');
+  if(dot) dot.style.display='block';
+  document.querySelectorAll('.sf-opt').forEach(o=>o.classList.remove('on'));
+  cfilt='ALL';
+  const allChip=document.querySelector('.chip:not([data-card])');
+  if(allChip){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));allChip.classList.add('on');}
+  go('feed');
 }
 
 // ─── DATE FILTER ─────────────────────────────────────────────────────────────
