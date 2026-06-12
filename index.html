@@ -421,6 +421,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
     <div class="panel">
       <div class="pnhdr">
         <div class="pntitle"><i class="ti ti-alert-triangle" aria-hidden="true" style="color:var(--amber)"></i> Needs attention</div>
+        <span id="attention-count-badge" style="display:none" class="badge badge-pending"></span>
       </div>
       <div id="ov-attention" style="padding:4px 0"></div>
     </div>
@@ -1935,16 +1936,18 @@ function buildRecent(){
   el.innerHTML=recent.map(t=>`
     <div class="txnitem" data-txn-id="${esc(t.id)}" onclick="go('feed');sel(this.dataset.txnId)" role="button" tabindex="0" style="cursor:pointer">
       ${av(t.c,32)}
-      <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name}${t.tm?' · '+t.tm:''}</div></div>
-      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div class="merchant">${t.m}</div><div class="txnmeta">${ch(t.c).name}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}</div></div>
       <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
 }
 function buildAttention(){
   const el=document.getElementById('ov-attention');if(!el)return;
   const pend=TX.filter(t=>t.st==='pending'||t.st==='notified');
+  const cb=document.getElementById('attention-count-badge');
+  if(cb){if(pend.length){cb.textContent=pend.length+' pending';cb.style.display='';}else{cb.style.display='none';}}
   if(!pend.length){el.innerHTML='<div style="padding:24px 16px;text-align:center;color:var(--t3);font-size:13px"><i class="ti ti-circle-check" style="color:var(--teal);font-size:28px;display:block;margin-bottom:8px"></i>All caught up!</div>';return;}
-  el.innerHTML=pend.map(t=>`
+  el.innerHTML=pend.slice(0,6).map(t=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" data-txn-id="${esc(t.id)}" onclick="go('feed');sel(this.dataset.txnId)" role="button" tabindex="0">
       ${av(t.c,28)}
       <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.m}</div><div style="font-size:11px;color:var(--t3)">${ch(t.c).name} · ${fmt(t.a)}</div></div>
