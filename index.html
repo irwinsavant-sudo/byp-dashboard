@@ -330,6 +330,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .secgrid{grid-template-columns:repeat(2,1fr)}
   .txnitem{grid-template-columns:36px 1fr 80px}
   .txndate{display:none}
+  .pnhdr{flex-wrap:wrap;gap:6px}
   .panel{overflow-x:auto}
   .stbl{min-width:560px}
 }
@@ -348,7 +349,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .statsub{font-size:11px}
   .chips{padding:8px 10px;gap:4px}
   .chip{padding:3px 9px;font-size:10px}
-  .txnitem{grid-template-columns:32px 1fr auto;padding:10px;gap:8px}
+  .txnitem{grid-template-columns:36px 1fr auto;padding:10px 12px;gap:6px 10px}.txnitem>*:last-child{grid-column:2/-1}
   .merchant{font-size:12px}
   .txnmeta{font-size:10px}
   .amount{font-size:12px}
@@ -363,6 +364,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .chartrow{gap:8px}
   .pnhdr{padding:10px 12px}
   .pntitle{font-size:12px}
+  /* Live Feed pnhdr: hide count label + date text, show icon-only date btn */
+  #txn-count-lbl{display:none!important}
+  #feed-dp-label{display:none}
+  /* Status Sheet: shorten Export label */
+  #export-btn .export-label{display:none}
+  /* Cardholder chips: allow horizontal scroll instead of wrap */
+  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}
+  .chip{flex-shrink:0}
 }
 
 /* 380px — small phone */
@@ -372,6 +381,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .clock{display:none}
   .brand-sub{display:none}
   .stbl{min-width:480px}
+  #dot-feed-lbl{display:none}
+  .psub{display:none}
 }
 
 /* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
@@ -701,7 +712,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
           </div>
         </div>
       </div>
-      <button class="btn" id="export-btn" onclick="doExport()"><i class="ti ti-download" aria-hidden="true"></i>Export CSV</button>
+      <button class="btn" id="export-btn" onclick="doExport()"><i class="ti ti-download" aria-hidden="true"></i><span class="export-label">Export CSV</span></button>
       <button class="btn btn-teal" id="qb-btn" onclick="openQB()"><i class="ti ti-brand-quickbooks" aria-hidden="true"></i>Push to QuickBooks</button>
     </div>
   </div>
