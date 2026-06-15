@@ -330,7 +330,6 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .secgrid{grid-template-columns:repeat(2,1fr)}
   .txnitem{grid-template-columns:36px 1fr 80px}
   .txndate{display:none}
-  .pnhdr{flex-wrap:wrap;gap:6px}
   .panel{overflow-x:auto}
   .stbl{min-width:560px}
 }
@@ -349,7 +348,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .statsub{font-size:11px}
   .chips{padding:8px 10px;gap:4px}
   .chip{padding:3px 9px;font-size:10px}
-  .txnitem{grid-template-columns:36px 1fr auto;padding:10px 12px;gap:6px 10px}.txnitem>*:last-child{grid-column:2/-1}
+  .txnitem{grid-template-columns:36px 1fr auto;padding:10px 12px;gap:6px 8px}
   .merchant{font-size:12px}
   .txnmeta{font-size:10px}
   .amount{font-size:12px}
@@ -362,16 +361,15 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .secgrid{grid-template-columns:repeat(2,1fr);gap:8px}
   .section-row{gap:8px}
   .chartrow{gap:8px}
-  .pnhdr{padding:10px 12px}
-  .pntitle{font-size:12px}
+  .pnhdr{padding:8px 12px;flex-wrap:wrap;row-gap:8px}
+  .pntitle{font-size:12px;width:100%}
   /* Live Feed pnhdr: hide count label + date text, show icon-only date btn */
   #txn-count-lbl{display:none!important}
   #feed-dp-label{display:none}
   /* Status Sheet: shorten Export label */
   #export-btn .export-label{display:none}
-  /* Cardholder chips: allow horizontal scroll instead of wrap */
-  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}
-  .chip{flex-shrink:0}
+  /* Cardholder chips: wrap on 2 lines if needed */
+  .chip{font-size:10px;padding:3px 9px}
 }
 
 /* 380px — small phone */
@@ -428,7 +426,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 <header class="topbar" role="banner">
   <button class="mob-hamburger" onclick="openMobNav()" aria-label="Open navigation menu" aria-expanded="false" id="mob-hamburger-btn"><i class="ti ti-menu-2"></i></button>
     <div class="brand">
-    <div class="brandmark" aria-hidden="true">BP</div>
+    <div class="brandmark" role="button" tabindex="0" title="Go to Overview" style="cursor:pointer" onclick="go('overview')" onkeydown="if(event.key==='Enter'||event.key===' ')go('overview')" aria-label="Go to Overview">BP</div>
     <div>
       <div class="brand-name">Backyard Pod — Accounting App</div>
       <div class="brand-sub">Transaction monitoring center</div>
