@@ -895,17 +895,17 @@ const SYNC_TS = '';
 // REMIND_WEBHOOK_URL   — n8n WF-2b webhook URL for accountant-triggered reminders
 // REMIND_WEBHOOK_SECRET— shared secret for WF-2b remind endpoint
 // DATA:WEBHOOK:START
-const QB_PUSH_URL             = '%%QB_PUSH_URL%%';
-const QB_PUSH_SECRET          = '%%QB_PUSH_SECRET%%';
-const SHEETS_URL              = '%%SHEETS_URL%%';
-const PROJECTS_WEBHOOK_URL    = '%%PROJECTS_WEBHOOK_URL%%';
-const PROJECTS_WEBHOOK_SECRET = '%%PROJECTS_WEBHOOK_SECRET%%';
-const PROJECTS_SHEET_URL      = '%%PROJECTS_SHEET_URL%%';
-const N8N_STATUS_URL          = '%%N8N_STATUS_URL%%';
-const DASHBOARD_DATA_URL      = '%%DASHBOARD_DATA_URL%%'; // Worker /dashboard-data endpoint
-const DASHBOARD_WRITE_SECRET  = '%%DASHBOARD_WRITE_SECRET%%'; // shared secret for write-back
-const REMIND_WEBHOOK_URL      = '%%REMIND_WEBHOOK_URL%%';   // WF-2b: accountant-triggered remind
-const REMIND_WEBHOOK_SECRET   = '%%REMIND_WEBHOOK_SECRET%%'; // shared secret for WF-2b
+const QB_PUSH_URL             = 'https://n8n-space.byp-app.workers.dev/webhook/qb-push';
+const QB_PUSH_SECRET          = '0ad2dbb851b04552f4bb3ec34a402abd833905fa66465753634204caa1e9eb9e';
+const SHEETS_URL              = 'https://docs.google.com/spreadsheets/d/1lM3WMabIbzWc9s5pWv9qkMBn5SVaCPe8AYKeHwxegUg/edit';
+const PROJECTS_WEBHOOK_URL    = 'https://n8n-space.byp-app.workers.dev/webhook/projects';
+const PROJECTS_WEBHOOK_SECRET = '61fffb85d3926299c5113f1e6a6cc10cde0092c18681ea6f7681132f0d411a17';
+const PROJECTS_SHEET_URL      = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0';
+const N8N_STATUS_URL          = 'https://n8n-space.byp-app.workers.dev/workflow-status';
+const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard-data'; // Worker /dashboard-data endpoint
+const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa'; // shared secret for write-back
+const REMIND_WEBHOOK_URL      = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';   // WF-2b: accountant-triggered remind
+const REMIND_WEBHOOK_SECRET   = '868875f9c928fe2f139b5361f9e7059e86e938c3c3d970a61fb61750f45c6df8'; // shared secret for WF-2b
 // DATA:WEBHOOK:END
 
 let selId=null, cfilt='ALL', sFilter='ALL';
@@ -1122,7 +1122,7 @@ function confirmRemove(){
 }
 
 async function _syncProjectAction(action, project){
-  if(!PROJECTS_WEBHOOK_URL || PROJECTS_WEBHOOK_URL==='%%PROJECTS_WEBHOOK_URL%%'){
+  if(!PROJECTS_WEBHOOK_URL || PROJECTS_WEBHOOK_URL==='https://n8n-space.byp-app.workers.dev/webhook/projects'){
     setSyncStatus('disconnected');
     showUnsavedBadge(true);
     toast('Not connected','PROJECTS_WEBHOOK_URL not set — change saved locally only. Set up n8n WF-6 to enable full sync.','info');
@@ -1204,7 +1204,7 @@ async function syncProjectsFromSheets(){
 }
 
 function openProjectsSheet(){
-  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!=='%%PROJECTS_SHEET_URL%%'){
+  if(PROJECTS_SHEET_URL && PROJECTS_SHEET_URL!=='https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0'){
     window.open(PROJECTS_SHEET_URL, '_blank');
   } else {
     toast('Not configured','PROJECTS_SHEET_URL not set in Netlify env vars','info');
@@ -1869,7 +1869,7 @@ function closeQB(){document.getElementById('qboverlay').classList.remove('open')
 let qbRunning=false;
 async function doQBPush(){
   if(qbRunning)return;
-  if(!QB_PUSH_URL||QB_PUSH_URL==='%%QB_PUSH_URL%%'){
+  if(!QB_PUSH_URL||QB_PUSH_URL==='https://n8n-space.byp-app.workers.dev/webhook/qb-push'){
     closeQB();
     toast('Not configured','QB_PUSH_URL not set — run a Netlify deploy first','info');
     return;
