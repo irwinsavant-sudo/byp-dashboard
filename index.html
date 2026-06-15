@@ -271,99 +271,23 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-/* ── MOBILE NAV ──────────────────────── */
-.mob-hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--rsm);background:transparent;border:1px solid var(--bdr2);cursor:pointer;color:var(--t2);flex-shrink:0;font-size:20px}
-.mob-hamburger:hover{background:var(--s2);color:var(--t1)}
-.mob-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:190;backdrop-filter:blur(2px)}
-.mob-backdrop.open{display:block}
-
 /* ── RESPONSIVE ──────────────────────── */
-
-/* 960px — tablet landscape */
 @media(max-width:960px){
-  :root{--nav:56px}
+  :root{--nav:58px}
   .navitem span,.navpill,.navlbl,.brand-sub,.brand-name{display:none}
   .navitem{justify-content:center;padding:10px}
   .statgrid{grid-template-columns:repeat(2,1fr)}
   .feedlayout{grid-template-columns:1fr}
-  #detailwrap{position:static;max-height:none}
   .chartrow{grid-template-columns:1fr}
   .holdergrid{grid-template-columns:1fr}
   .wfgrid{grid-template-columns:1fr}
   .section-row{grid-template-columns:1fr}
-  .secgrid{grid-template-columns:repeat(2,1fr)}
 }
-
-/* 768px — tablet portrait / large phone */
-@media(max-width:768px){
-  :root{--nav:0px;--hdr:52px}
-  html,body{height:auto;overflow-x:hidden;overflow-y:auto}
-  .shell{display:flex;flex-direction:column;height:auto;min-height:100svh;grid-template-rows:unset;grid-template-columns:unset}
-  .topbar{grid-column:unset;position:sticky;top:0;z-index:150;width:100%}
-  .sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:240px;z-index:200;box-shadow:6px 0 32px rgba(0,0,0,.7);overflow-y:auto;padding:calc(var(--hdr) + 8px) 8px 16px;flex-direction:column}
-  .sidebar.mob-open{display:flex}
-  .main{overflow-y:visible;flex:1;width:100%}
-  .page{padding:14px}
-  .mob-hamburger{display:flex}
-  .sysinds{display:none}
-  .clock{font-size:12px;padding-left:10px;border-left:none;min-width:auto}
-  .phdr{flex-wrap:wrap;gap:10px;margin-bottom:16px}
-  .phdr-actions{flex-wrap:wrap;gap:8px}
-  #new-txn-card{min-width:0;max-width:100%}
-  .statgrid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
-  .statcard{padding:16px 18px}
-  .statval{font-size:28px}
-  .chartrow{grid-template-columns:1fr;margin-bottom:16px}
-  .feedlayout{grid-template-columns:1fr}
-  #detailwrap{position:static;max-height:none}
-  .holdergrid{grid-template-columns:1fr}
-  .wfgrid{grid-template-columns:1fr}
-  .section-row{grid-template-columns:1fr;margin-top:14px}
-  .secgrid{grid-template-columns:repeat(2,1fr)}
-  .txnitem{grid-template-columns:36px 1fr 80px}
-  .txndate{display:none}
-  .panel{overflow-x:auto}
-  .stbl{min-width:560px}
-}
-
-/* 480px — phone portrait */
-@media(max-width:480px){
-  :root{--hdr:48px}
-  .page{padding:10px}
-  .ptitle{font-size:18px}
-  .psub{font-size:12px}
-  .phdr{margin-bottom:12px}
-  .statgrid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
-  .statcard{padding:12px 14px}
-  .statval{font-size:22px}
-  .statlbl{font-size:11px;margin-bottom:7px}
-  .statsub{font-size:11px}
-  .chips{padding:8px 10px;gap:4px}
-  .chip{padding:3px 9px;font-size:10px}
-  .txnitem{grid-template-columns:32px 1fr auto;padding:10px;gap:8px}
-  .merchant{font-size:12px}
-  .txnmeta{font-size:10px}
-  .amount{font-size:12px}
-  .modal{padding:18px;border-radius:12px;max-width:96vw}
-  .modal-title{font-size:16px}
-  .wfcard{padding:14px}
-  .wftitle{font-size:12px}
-  .holdercard{padding:14px}
-  .hstatval{font-size:20px}
-  .secgrid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .section-row{gap:8px}
-  .chartrow{gap:8px}
-  .pnhdr{padding:10px 12px}
-  .pntitle{font-size:12px}
-}
-
-/* 380px — small phone */
-@media(max-width:380px){
-  .statgrid{grid-template-columns:1fr}
-  .statval{font-size:26px}
-  .clock{display:none}
-  .brand-sub{display:none}
-  .stbl{min-width:480px}
+@media(max-width:640px){
+  :root{--nav:0px}
+  .sidebar{display:none}
+  .statgrid{grid-template-columns:1fr 1fr}
+  .txnitem{grid-template-columns:36px 1fr 90px auto}
 }
 
 /* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
@@ -378,7 +302,6 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 
 <!-- ═══ TOP BAR ════════════════════════ -->
 <header class="topbar" role="banner">
-  <button class="mob-hamburger" onclick="openMobNav()" aria-label="Open navigation menu" aria-expanded="false" id="mob-hamburger-btn"><i class="ti ti-menu-2"></i></button>
   <div class="brand">
     <div class="brandmark" aria-hidden="true">BP</div>
     <div>
@@ -398,8 +321,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 </header>
 
 <!-- ═══ SIDEBAR ════════════════════════ -->
-<div class="mob-backdrop" id="mob-backdrop" onclick="closeMobNav()"></div>
-<nav class="sidebar" id="sidebar" role="navigation" aria-label="Dashboard sections">
+<nav class="sidebar" role="navigation" aria-label="Dashboard sections">
   <div class="navlbl">Main</div>
   <div class="navitem active" id="nav-overview" onclick="go('overview')" role="button" tabindex="0" aria-current="page">
     <i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Overview</span>
@@ -440,7 +362,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
       <h1 class="ptitle">Overview</h1>
       <p class="psub" id="datestr">Loading…</p>
     </div>
-    <div class="phdr-actions">
+    <div class="phdr-actions" style="display:flex;align-items:center;gap:14px">
+      <div id="new-txn-card" style="display:none;background:var(--s1);border:1px solid var(--bdr2);border-left:3px solid var(--amber);border-radius:var(--r);padding:10px 14px;min-width:220px;max-width:320px;animation:toastIn .3s ease-out;cursor:pointer" onclick="dismissNewTxnCard()" title="Click to dismiss">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <i class="ti ti-bolt" style="color:var(--amber);font-size:14px"></i>
+          <span style="font-size:12px;font-weight:700;color:var(--amber)">New Transaction</span>
+        </div>
+        <div id="new-txn-card-msg" style="font-size:12px;color:var(--t2);line-height:1.4"></div>
+      </div>
       <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t3)">
         <span class="sysdot off" id="dot-overview" aria-hidden="true"></span> <span id="dot-overview-lbl">Not connected — complete setup to see live data</span>
       </span>
@@ -482,8 +411,11 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
       <div class="pnhdr">
         <div class="pntitle"><i class="ti ti-chart-donut" aria-hidden="true"></i> By cardholder</div>
       </div>
-      <div style="padding:16px;height:224px;display:flex;align-items:center;justify-content:center">
-        <canvas id="chartCard" role="img" aria-label="Donut chart: spending breakdown by cardholder"></canvas>
+      <div style="padding:16px;height:224px;display:flex;gap:16px;align-items:center">
+        <div style="flex:0 0 152px;height:152px;position:relative">
+          <canvas id="chartCard" role="img" aria-label="Donut chart: spending breakdown by cardholder"></canvas>
+        </div>
+        <div id="chartCard-legend" style="flex:1;overflow-y:auto;max-height:192px;display:flex;flex-direction:column;gap:5px;padding-right:2px;scrollbar-width:thin;scrollbar-color:var(--bdr2) transparent"></div>
       </div>
     </div>
   </div>
@@ -499,6 +431,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
     <div class="panel">
       <div class="pnhdr">
         <div class="pntitle"><i class="ti ti-alert-triangle" aria-hidden="true" style="color:var(--amber)"></i> Needs attention</div>
+        <button id="attention-count-badge" style="display:none;cursor:pointer;border:none;background:none;padding:0;font-family:inherit" class="badge badge-pending" onclick="goToNeedsAttention()" title="View all pending transactions"></button>
       </div>
       <div id="ov-attention" style="padding:4px 0"></div>
     </div>
@@ -523,7 +456,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
       <div class="pnhdr">
         <div class="pntitle"><i class="ti ti-list" aria-hidden="true"></i> Transactions</div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--t3)" id="txn-count-lbl">— transactions</span>
+          <span style="font-size:12px;color:var(--t3);display:inline-flex;align-items:center;gap:6px" id="txn-count-lbl">— transactions</span>
           <div class="sf-wrap">
             <button class="btn btn-sm" id="sf-btn" onclick="toggleStatusFilter()" title="Filter by status" aria-label="Filter by status" style="position:relative;padding:5px 9px">
               <i class="ti ti-filter" aria-hidden="true"></i>
@@ -662,57 +595,57 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   <div class="wfgrid">
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf1" style="flex-shrink:0" aria-hidden="true"></span> WF1 — Plaid Ingest + HTML Rebuild</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span style="color:var(--t3)">Inactive — not yet configured</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span id="wf1-status" style="color:var(--t3)">Checking…</span></div>
       <div class="wfrow"><span class="wflbl">Source</span><span style="color:var(--t3)">Plaid API (sandbox → production)</span></div>
       <div class="wfrow"><span class="wflbl">Poll interval</span><span style="color:var(--t3)">Every 5 minutes</span></div>
-      <div class="wfrow"><span class="wflbl">Last triggered</span><span style="color:var(--t3)">Never</span></div>
-      <div class="wfrow"><span class="wflbl">Executions today</span><span id="wf1exec" style="color:var(--t3)">0</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf1-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Transactions today</span><span id="wf1exec" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf1-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf2" style="flex-shrink:0" aria-hidden="true"></span> WF2 — Slack Notifier</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span style="color:var(--t3)">Inactive — not yet configured</span></div>
-      <div class="wfrow"><span class="wflbl">Messages sent today</span><span id="wf2sent" style="color:var(--t3)">0</span></div>
-      <div class="wfrow"><span class="wflbl">Delivery rate</span><span style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Block Kit template</span><span style="color:var(--t3)">Not configured</span></div>
-      <div class="wfrow"><span class="wflbl">Card routing table</span><span id="wf2cards" style="color:var(--t3)">0 cards mapped</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span id="wf2-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf2-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Messages sent</span><span id="wf2sent" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Block Kit template</span><span id="wf2-template" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Card routing table</span><span id="wf2cards" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf2-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf3" style="flex-shrink:0" aria-hidden="true"></span> WF3 — Slack Response Collector</div>
-      <div class="wfrow"><span class="wflbl">Interactivity webhook</span><span style="color:var(--t3)">Not configured</span></div>
-      <div class="wfrow"><span class="wflbl">Responses received</span><span id="wf3resp" style="color:var(--t3)">0 today</span></div>
-      <div class="wfrow"><span class="wflbl">Avg response time</span><span style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Sheets updates</span><span id="wf3updates" style="color:var(--t3)">0 today</span></div>
-      <div class="wfrow"><span class="wflbl">Signature validation</span><span style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span id="wf3-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf3-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Responses received</span><span id="wf3resp" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Sheets updates</span><span id="wf3updates" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Interactivity webhook</span><span id="wf3-webhook" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf3-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf4" style="flex-shrink:0" aria-hidden="true"></span> WF4 — Weekly Summary</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span style="color:var(--t3)">Inactive — not yet configured</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span id="wf4-status" style="color:var(--t3)">Checking…</span></div>
       <div class="wfrow"><span class="wflbl">Schedule</span><span style="color:var(--t3)">Every Friday 9:00 AM</span></div>
-      <div class="wfrow"><span class="wflbl">Last run</span><span style="color:var(--t3)">Never</span></div>
+      <div class="wfrow"><span class="wflbl">Last run</span><span id="wf4-lastrun" style="color:var(--t3)">—</span></div>
       <div class="wfrow"><span class="wflbl">Recipients</span><span style="color:var(--t3)">Accountant only</span></div>
-      <div class="wfrow"><span class="wflbl">Emails sent</span><span style="color:var(--t3)">0 this week</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Emails sent</span><span id="wf4-emails" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf4-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf5" style="flex-shrink:0" aria-hidden="true"></span> WF5 — QuickBooks Push</div>
-      <div class="wfrow"><span class="wflbl">OAuth token</span><span style="color:var(--t3)">Not connected</span></div>
-      <div class="wfrow"><span class="wflbl">Last sync</span><span style="color:var(--t3)">Never</span></div>
-      <div class="wfrow"><span class="wflbl">Total records synced</span><span style="color:var(--t3)">0</span></div>
-      <div class="wfrow"><span class="wflbl">Ready to sync now</span><span style="color:var(--t3)" id="qb-ready">0 transactions</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span id="wf5-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last sync</span><span id="wf5-lastsync" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Total records synced</span><span id="wf5-totalsynced" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Ready to sync now</span><span id="qb-ready" style="color:var(--t3)">—</span></div>
       <div class="wfrow"><span class="wflbl">Trigger</span><span style="color:var(--t3)">Dashboard button → n8n webhook</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf5-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf6" style="flex-shrink:0" aria-hidden="true"></span> WF6 — Project Management</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span style="color:var(--t3)">Inactive — not yet configured</span></div>
-      <div class="wfrow"><span class="wflbl">Webhook</span><span style="color:var(--t3)">Not configured</span></div>
-      <div class="wfrow"><span class="wflbl">Projects active</span><span id="wf6projects" style="color:var(--t3)">0 active</span></div>
-      <div class="wfrow"><span class="wflbl">Last sync</span><span style="color:var(--t3)">Never</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span id="wf6-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf6-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Projects active</span><span id="wf6projects" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Webhook</span><span id="wf6-webhook" style="color:var(--t3)">—</span></div>
       <div class="wfrow"><span class="wflbl">Trigger</span><span style="color:var(--t3)">Dashboard → Sheets → n8n</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf6-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard" style="grid-column:span 2">
       <div class="wftitle"><i class="ti ti-shield" style="color:var(--t3)" aria-hidden="true"></i> Security Configuration — Target Architecture (not yet active)</div>
@@ -982,6 +915,8 @@ let dateFrom='', dateTo='', activeDateQuick='all';
 // Safe cardholder lookup — never crashes if card missing from H
 const ch  = card => H[card] || {name:'Unknown',init:'??',col:'#8B9CB8',bg:'#18202E',role:'Cardholder'};
 const fmt = n => '$'+parseFloat((n||0).toString().replace(/[^0-9.-]/g,'')||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate = d => { const m=d&&d.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[2]}/${m[3]}/${m[1].slice(2)}`:(d||''); };
+const fmtTime = t => { const m=t&&t.match(/^(\d{1,2}):(\d{2})/); if(!m)return t||''; let h=parseInt(m[1],10); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${m[2]} ${ap}`; };
 const comp= t => [t.pu, t.pr, t.ac, (t.rc||t.rc_url), t.no].filter(Boolean).length;
 const COMP_TOTAL = 5; // purpose, project, account_category, receipt, notes
 const av  = (card,sz=36) => {
@@ -1026,40 +961,35 @@ function updStats(){
   if(pb){pb.textContent=pend;pb.style.display=pend?'':'none';}
   const sf=document.getElementById('sheetfooter');
   if(sf) sf.textContent=`${done} of ${TX.length} transactions complete and ready to sync`;
-  const qr=document.getElementById('qb-ready');
-  if(qr) qr.textContent=`${TX.filter(t=>t.st==='complete').length} transaction${done!==1?'s':''}`;
-  const wf1=document.getElementById('wf1exec'); if(wf1) wf1.textContent=TX.length;
-  const wf2=document.getElementById('wf2sent'); if(wf2) wf2.textContent=TX.length+' today';
-  const wf2c=document.getElementById('wf2cards');if(wf2c)wf2c.textContent=cards+' cards mapped';
-  const wf3r=document.getElementById('wf3resp'); if(wf3r)wf3r.textContent=done+' today';
-  const wf3u=document.getElementById('wf3updates');if(wf3u)wf3u.textContent=done+' today';
+  const qrEl=document.getElementById('qb-ready');
+  const readyToSync=TX.filter(t=>t.st==='complete').length;
+  if(qrEl) qrEl.textContent=`${readyToSync} transaction${readyToSync!==1?'s':''}`;
+
+  // Workflow card stats derived from TX data
+  const today=new Date().toISOString().slice(0,10);
+  const todayTx=TX.filter(t=>t.dt===today);
+  const notified=TX.filter(t=>t.st!=='pending');
+  const pushed=TX.filter(t=>t.st==='pushed').length;
+
+  const wf1=document.getElementById('wf1exec');   if(wf1) wf1.textContent=todayTx.length;
+  const wf2=document.getElementById('wf2sent');   if(wf2) wf2.textContent=notified.length+' total';
+  const wf2c=document.getElementById('wf2cards'); if(wf2c) wf2c.textContent=cards+' cards mapped';
+  const wf3r=document.getElementById('wf3resp');  if(wf3r) wf3r.textContent=done+' responded';
+  const wf3u=document.getElementById('wf3updates');if(wf3u) wf3u.textContent=done+' sheet updates';
+  const wf5t=document.getElementById('wf5-totalsynced');if(wf5t) wf5t.textContent=pushed;
+  const wf6p=document.getElementById('wf6projects');if(wf6p) wf6p.textContent=PROJECTS.length+' active';
 }
 
 // ─── NAV ────────────────────────────────────────────────────────────────────
 const VALID_PAGES = ['overview','feed','sheet','cardholders','projects','workflow'];
 
-function openMobNav(){
-  document.getElementById('sidebar').classList.add('mob-open');
-  document.getElementById('mob-backdrop').classList.add('open');
-  document.getElementById('mob-hamburger-btn').setAttribute('aria-expanded','true');
-  document.body.style.overflow='hidden';
-}
-function closeMobNav(){
-  document.getElementById('sidebar').classList.remove('mob-open');
-  document.getElementById('mob-backdrop').classList.remove('open');
-  document.getElementById('mob-hamburger-btn').setAttribute('aria-expanded','false');
-  document.body.style.overflow='';
-}
-
 function go(page, skipHistory){
   if(!VALID_PAGES.includes(page)) page='overview';
-  closeMobNav();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.navitem').forEach(n=>{n.classList.remove('active');n.removeAttribute('aria-current');});
   document.getElementById('page-'+page).classList.add('active');
   const ni=document.getElementById('nav-'+page);if(ni){ni.classList.add('active');ni.setAttribute('aria-current','page');}
-  if(window.innerWidth>768) document.getElementById('main').scrollTop=0;
-  else window.scrollTo(0,0);
+  document.getElementById('main').scrollTop=0;
   if(page==='sheet')buildSheet();
   if(page==='cardholders')buildHolders();
   if(page==='overview'){buildRecent();buildAttention();}
@@ -1296,8 +1226,9 @@ function buildList(){
     .filter(t=>sFilter==='ALL'||effectiveSt(t)===sFilter);
   const cl=document.getElementById('txn-count-lbl');
   if(cl){
-    const filterDesc=sFilter!=='ALL'?` · ${sFilter}`:'';
-    cl.textContent=`${rows.length} transaction${rows.length!==1?'s':''}${filterDesc}`;
+    const countTxt=`${rows.length} transaction${rows.length!==1?'s':''}`;
+    const badgeHtml=sFilter!=='ALL'?badge(sFilter):'';
+    cl.innerHTML=badgeHtml?`${countTxt} — ${badgeHtml}`:countTxt;
   }
   if(!rows.length){
     const msg=TX.length
@@ -1311,9 +1242,9 @@ function buildList(){
       ${av(t.c,36)}
       <div>
         <div class="merchant">${t.m}</div>
-        <div class="txnmeta">••••${t.c} · ${ch(t.c).name} · ${t.tm||''}</div>
+        <div class="txnmeta">••••${t.c} · ${ch(t.c).name}${t.tm?' · '+fmtTime(t.tm):''}</div>
       </div>
-      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${fmtDate(t.dt)}</div></div>
       <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
   el.querySelectorAll('.txnitem').forEach(r=>r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click();}}));
@@ -1363,7 +1294,7 @@ function buildDetail(){
     <div class="dgrid2">
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Merchant</div><div style="font-weight:600;font-size:13px">${t.m}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Amount</div><div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber)">${fmt(t.a)}</div></div>
-      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Date &amp; Time</div><div style="font-size:12px">${fmtDate(t.dt)}${t.tm?' · '+fmtTime(t.tm):''}</div></div>
       <div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Filing progress</div><div style="font-size:12px;font-weight:600">${c}/${COMP_TOTAL} fields</div><div class="prog"><div class="progfill" style="width:${p}%;background:${pcolor(p)}"></div></div></div>
     </div>
   </div>
@@ -1446,14 +1377,15 @@ function buildDetail(){
       </div>
     </div>
   </div>
+  ${effectiveSt(t)!=='complete' ? `
   <div class="dsec">
     <div class="dlbl">Slack thread</div>
     <div class="slackthread">
       <div style="font-size:11px;color:var(--t3);text-align:center;padding:8px;font-style:italic">Loading thread…</div>
     </div>
-  </div>
+  </div>` : ''}
   <div class="dsec" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-sm" data-txn-id="${esc(t.id)}" onclick="resend(this.dataset.txnId)"><i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack</button>
+    ${effectiveSt(t)!=='complete'&&!isPushed ? `<button class="btn btn-sm${t.st==='pending'?' btn-amber':''}" data-txn-id="${esc(t.id)}" onclick="resend(this.dataset.txnId)"><i class="ti ti-brand-slack" aria-hidden="true"></i> ${t.st==='pending'?'Notify via Slack':'Resend to Slack'}</button>` : ''}
     ${!isPushed
       ? (effectiveSt(t)==='complete'
           ? `<button class="btn btn-sm" style="color:var(--amber);border-color:var(--amberRing)" data-txn-id="${esc(t.id)}" onclick="markPending(this.dataset.txnId)"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i> Mark pending</button>`
@@ -1461,8 +1393,8 @@ function buildDetail(){
       : ''}
     ${isPushed?`<span style="font-size:12px;color:var(--t3);display:flex;align-items:center;gap:5px"><i class="ti ti-brand-quickbooks" style="color:var(--teal)"></i> Pushed to QuickBooks</span>`:''}
   </div>`;
-  // ── Fetch live Slack thread ───────────────────────────────────────────────
-  if (t.sc && t.sts && DASHBOARD_DATA_URL && !DASHBOARD_DATA_URL.startsWith('%%')) {
+  // ── Fetch live Slack thread (only while pending/partial — hides when complete) ─
+  if (effectiveSt(t)!=='complete' && t.sc && t.sts && DASHBOARD_DATA_URL && !DASHBOARD_DATA_URL.startsWith('%%')) {
     const threadDiv = de.querySelector('.slackthread');
     if (threadDiv) {
       const workerBase = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '');
@@ -1490,11 +1422,13 @@ function buildDetail(){
 async function resend(id){
   const t=TX.find(x=>x.id===id);
   if(!t) return;
+  const isFirst = t.st==='pending'; // first-ever notification
   if(!REMIND_WEBHOOK_URL||REMIND_WEBHOOK_URL.startsWith('%%')){
     toast('Config missing','REMIND_WEBHOOK_URL not set in deploy env','error'); return;
   }
   const btn=document.querySelector('.btn[data-txn-id="'+id+'"]');
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Sending...';}
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spin"></i> Sending...';}
+  let success=false;
   try{
     const r=await fetch(REMIND_WEBHOOK_URL,{
       method:'POST',
@@ -1504,11 +1438,28 @@ async function resend(id){
     let d={};
     try{ d=await r.json(); } catch(_){ /* non-JSON body — treat as ok if status 200 */ }
     if(!r.ok||d.error) throw new Error(d.error||`Webhook responded ${r.status}`);
-    toast('Slack','Reminder sent to '+ch(t.c).name,'info');
+    success=true;
+    if(isFirst){
+      t.st='notified';
+      // PATCH GSheets asynchronously — don't block the UI
+      if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
+        fetch(DASHBOARD_DATA_URL,{
+          method:'PATCH',
+          headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+          body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
+        }).catch(()=>{});
+      }
+    }
+    toast('Slack',isFirst?'Notification sent to '+ch(t.c).name:'Reminder sent to '+ch(t.c).name,'info');
   }catch(e){
     toast('Send failed',e.message,'error');
   }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brand-slack" aria-hidden="true"></i> Resend to Slack';}
+    if(success){
+      // Rebuild UI so button re-renders correctly from updated t.st
+      updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
+    } else {
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brand-slack" aria-hidden="true"></i> '+(isFirst?'Notify via Slack':'Resend to Slack');}
+    }
   }
 }
 
@@ -1516,14 +1467,16 @@ async function markPending(id){
   const t=TX.find(x=>x.id===id);
   if(!t||t.st==='pushed') return;
   const prev=t.st;
-  t.st='pending';
+  // Set to 'notified' (not 'pending') — the cardholder was already notified at least once,
+  // so "Resend to Slack" should appear, not "Notify via Slack".
+  t.st='notified';
   updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
     const r=await fetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
       headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
-      body:JSON.stringify({txn_id:t.id,field:'status',value:'pending'})
+      body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
     });
     const d=await r.json();
     if(!r.ok||d.error){
@@ -1801,7 +1754,9 @@ function buildChips(){
     const btn=document.createElement('button');
     btn.className='chip'+(cfilt===card?' on':'');
     btn.dataset.card=card;
-    btn.textContent=`••••${card} ${h.name.split(' ')[1]||h.name}`;
+    const np=h.name.trim().split(' ');
+    const abbr=np.length>1?np[0][0]+'.'+np[np.length-1]:h.name;
+    btn.textContent=`••••${card} ${abbr}`;
     btn.onclick=()=>filt(card,btn);
     btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();btn.click();}});
     container.appendChild(btn);
@@ -1850,7 +1805,7 @@ function buildSheet(){
     const rb=effectiveSt(t)==='pushed'?'rgba(16,185,129,.03)':effectiveSt(t)==='complete'?'rgba(16,185,129,.05)':effectiveSt(t)==='partial'?'rgba(245,158,11,.04)':'';
     const pct=Math.round(c/COMP_TOTAL*100);
     return `<tr style="${rb?'background:'+rb:''}">
-      <td class="mono" style="font-size:11px;white-space:nowrap">${t.dt}</td>
+      <td class="mono" style="font-size:11px;white-space:nowrap">${fmtDate(t.dt)}</td>
       <td><div style="display:flex;align-items:center;gap:8px">${av(t.c,24)}<span>${h.name}</span></div></td>
       <td class="mono" style="font-size:11px;color:var(--t3)">••••${t.c}</td>
       <td style="max-width:130px;font-size:12px">${t.m}</td>
@@ -1892,7 +1847,7 @@ function openQB(){
         <div style="display:flex;align-items:center;gap:10px">${av(t.c,28)}<span style="font-weight:500">${t.m}</span></div>
         <div style="text-align:right">
           <div style="font-family:'JetBrains Mono',monospace;font-weight:700">${fmt(t.a)}</div>
-          <div style="font-size:11px;color:var(--t3)">${t.dt}${t.pr?' · '+t.pr:''}</div>
+          <div style="font-size:11px;color:var(--t3)">${fmtDate(t.dt)}${t.pr?' · '+t.pr:''}</div>
         </div>
       </div>`).join('')
     : `<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">No complete transactions${hasRange?' for the selected dates':''}</div>`;
@@ -2007,16 +1962,18 @@ function buildRecent(){
   el.innerHTML=recent.map(t=>`
     <div class="txnitem" data-txn-id="${esc(t.id)}" onclick="go('feed');sel(this.dataset.txnId)" role="button" tabindex="0" style="cursor:pointer">
       ${av(t.c,32)}
-      <div><div class="merchant" style="font-size:12px">${t.m}</div><div class="txnmeta">${ch(t.c).name} · ${t.tm||''}</div></div>
-      <div><div class="amount" style="font-size:12px">${fmt(t.a)}</div><div class="txndate">${t.dt}${t.tm?' · '+t.tm:''}</div></div>
+      <div><div class="merchant">${t.m}</div><div class="txnmeta">${ch(t.c).name}${t.tm?' · '+fmtTime(t.tm):''}</div></div>
+      <div><div class="amount">${fmt(t.a)}</div><div class="txndate">${fmtDate(t.dt)}</div></div>
       <div>${badge(effectiveSt(t))}</div>
     </div>`).join('');
 }
 function buildAttention(){
   const el=document.getElementById('ov-attention');if(!el)return;
   const pend=TX.filter(t=>t.st==='pending'||t.st==='notified');
+  const cb=document.getElementById('attention-count-badge');
+  if(cb){if(pend.length){cb.textContent=pend.length+' pending';cb.style.display='';}else{cb.style.display='none';}}
   if(!pend.length){el.innerHTML='<div style="padding:24px 16px;text-align:center;color:var(--t3);font-size:13px"><i class="ti ti-circle-check" style="color:var(--teal);font-size:28px;display:block;margin-bottom:8px"></i>All caught up!</div>';return;}
-  el.innerHTML=pend.map(t=>`
+  el.innerHTML=pend.slice(0,6).map(t=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);cursor:pointer" data-txn-id="${esc(t.id)}" onclick="go('feed');sel(this.dataset.txnId)" role="button" tabindex="0">
       ${av(t.c,28)}
       <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.m}</div><div style="font-size:11px;color:var(--t3)">${ch(t.c).name} · ${fmt(t.a)}</div></div>
@@ -2055,6 +2012,26 @@ function toast(title,msg,type='info'){
   const container=document.getElementById('toasts');
   container.appendChild(el);
   setTimeout(()=>el.remove(),5500);
+}
+
+// ─── NEW TRANSACTION CARD ────────────────────────────────────────────────────
+let _newTxnTimer = null;
+function showNewTxnCard(msg){
+  const card=document.getElementById('new-txn-card');
+  const msgEl=document.getElementById('new-txn-card-msg');
+  if(!card||!msgEl) return;
+  msgEl.textContent=msg;
+  card.style.display='block';
+  card.style.animation='none';
+  void card.offsetWidth; // reflow to restart animation
+  card.style.animation='toastIn .3s ease-out';
+  if(_newTxnTimer) clearTimeout(_newTxnTimer);
+  _newTxnTimer=setTimeout(dismissNewTxnCard, 8000);
+}
+function dismissNewTxnCard(){
+  const card=document.getElementById('new-txn-card');
+  if(card) card.style.display='none';
+  if(_newTxnTimer){ clearTimeout(_newTxnTimer); _newTxnTimer=null; }
 }
 
 // ─── CHARTS ──────────────────────────────────────────────────────────────────
@@ -2116,6 +2093,7 @@ function initCharts(){
     col:h.col||h.color||'#8B9CB8'
   })).filter(x=>x.val>0);
 
+  const legendEl=document.getElementById('chartCard-legend');
   if(cardSpend.length){
     const _cc=Chart.getChart(document.getElementById('chartCard')); if(_cc) _cc.destroy();
     new Chart(document.getElementById('chartCard'),{
@@ -2127,16 +2105,23 @@ function initCharts(){
       options:{
         responsive:true,maintainAspectRatio:false,cutout:'68%',
         plugins:{
-          legend:{display:true,position:'bottom',labels:{boxWidth:10,boxHeight:10,borderRadius:3,padding:10,color:'#8B9CB8',usePointStyle:true}},
+          legend:{display:false},
           tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.parsed)}`}}
         }
       }
     });
+    // Custom legend — dot + name + amount, scrollable
+    if(legendEl) legendEl.innerHTML=cardSpend.map(x=>`
+      <div style="display:flex;align-items:center;gap:7px;min-width:0">
+        <span style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:${x.col}"></span>
+        <span style="font-size:11px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.label}</span>
+        <span style="flex-shrink:0;font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums">${fmt(x.val)}</span>
+      </div>`).join('');
   } else {
     // Empty state — no data yet
-    const canvas=document.getElementById('chartCard');
-    const ctx=canvas.getContext('2d');
-    canvas.parentElement.innerHTML=`
+    const _cc=Chart.getChart(document.getElementById('chartCard')); if(_cc) _cc.destroy();
+    document.getElementById('chartCard').style.display='none';
+    if(legendEl) legendEl.innerHTML=`
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--t3)">
         <i class="ti ti-chart-donut" style="font-size:32px;opacity:.25"></i>
         <span style="font-size:12px">No spend data yet</span>
@@ -2161,6 +2146,14 @@ function setSFilter(status, el){
   if(dot) dot.style.display=sFilter==='ALL'?'none':'block';
   closeAllPopovers();
   buildList();
+}
+
+function goToNeedsAttention(){
+  cfilt='ALL';
+  const allChip=document.querySelector('.chip:not([data-card])');
+  if(allChip){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));allChip.classList.add('on');}
+  setSFilter('pending', document.getElementById('sfo-pending'));
+  go('feed');
 }
 
 // ─── DATE FILTER ─────────────────────────────────────────────────────────────
@@ -2256,6 +2249,60 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.sf-wrap')&&!e.target.closest('.dp-wrap')) closeAllPopovers();
 });
 
+
+// ─── WORKFLOW CARDS ──────────────────────────────────────────────────────────
+function buildWorkflowCards(wfs, checkedAt){
+  // Returns colored HTML for a workflow's active state
+  function statusHtml(wf){
+    if(!wf||wf.active===null) return `<span style="color:var(--t3)">Not found in n8n</span>`;
+    if(wf.active)  return `<span style="color:var(--teal)">Active</span>`;
+    return `<span style="color:var(--amber)">Inactive</span>`;
+  }
+  // Returns colored HTML for last execution time (from lastExec object)
+  function lastRunHtml(wf){
+    if(!wf||!wf.lastExec||!wf.lastExec.startedAt) return `<span style="color:var(--t3)">Never</span>`;
+    const d=new Date(wf.lastExec.startedAt);
+    const ago=Math.round((Date.now()-d)/60000);
+    const color=wf.lastExec.status==='error'?'var(--red)':wf.lastExec.status==='success'?'var(--teal)':'var(--t2)';
+    const label=ago<1?'Just now':ago<60?`${ago}m ago`:ago<1440?`${Math.round(ago/60)}h ago`:d.toLocaleDateString();
+    return `<span style="color:${color}">${label}</span>`;
+  }
+  // Returns colored HTML for webhook/integration status
+  function hookHtml(wf){
+    if(!wf||wf.active===null) return `<span style="color:var(--t3)">—</span>`;
+    if(wf.active) return `<span style="color:var(--teal)">Active</span>`;
+    return `<span style="color:var(--t3)">Not configured</span>`;
+  }
+  // Update per-WF rows
+  const map={
+    WF1:{status:'wf1-status',lastrun:'wf1-lastrun'},
+    WF2:{status:'wf2-status',lastrun:'wf2-lastrun'},
+    WF3:{status:'wf3-status',lastrun:'wf3-lastrun'},
+    WF4:{status:'wf4-status',lastrun:'wf4-lastrun'},
+    WF5:{status:'wf5-status',lastrun:'wf5-lastsync'},
+    WF6:{status:'wf6-status',lastrun:'wf6-lastrun'},
+  };
+  Object.entries(map).forEach(([key,ids])=>{
+    const wf=wfs[key];
+    const s=document.getElementById(ids.status);  if(s) s.innerHTML=statusHtml(wf);
+    const r=document.getElementById(ids.lastrun); if(r) r.innerHTML=lastRunHtml(wf);
+  });
+  // WF2 extras
+  const wf2tpl=document.getElementById('wf2-template');
+  if(wf2tpl) wf2tpl.innerHTML=wfs.WF2?.active?`<span style="color:var(--teal)">Configured</span>`:`<span style="color:var(--t3)">Not configured</span>`;
+  // WF3 interactivity webhook
+  const wf3h=document.getElementById('wf3-webhook'); if(wf3h) wf3h.innerHTML=hookHtml(wfs.WF3);
+  // WF6 webhook
+  const wf6h=document.getElementById('wf6-webhook'); if(wf6h) wf6h.innerHTML=hookHtml(wfs.WF6);
+  // Header last-checked label
+  const wfLbl=document.getElementById('dot-workflow-lbl');
+  const allOn=Object.values(wfs).every(w=>w.active===true);
+  const anyErr=Object.values(wfs).some(w=>w.active===false&&w.active!==null);
+  if(wfLbl&&checkedAt){
+    const t=new Date(checkedAt).toLocaleTimeString();
+    wfLbl.textContent=allOn?`All systems operational — checked ${t}`:`${Object.values(wfs).filter(w=>w.active).length}/6 active — checked ${t}`;
+  }
+}
 
 // ─── SYSTEM STATUS ───────────────────────────────────────────────────────────
 // _wfLive filled by pollN8nStatus(); each entry: { active, edited, err }
@@ -2381,9 +2428,7 @@ async function pollN8nStatus(){
   const anyErr   =Object.values(wfs).some(w=>w.err===true);
   const headerState=anyErr?'err':allActive?'on':anyEdited?'warn':'off';
   applyDot('dot-workflow',headerState);
-  const activeCount=Object.values(wfs).filter(w=>w.active===true).length;
-  const wfLbl=document.getElementById('dot-workflow-lbl');
-  if(wfLbl) wfLbl.textContent=`${activeCount}/6 workflows active`;
+  buildWorkflowCards(wfs, data.checkedAt);
   syncSysdotsFromWFs();
 }
 
@@ -2402,6 +2447,10 @@ async function loadDashboardData(silent=false){
       if(!silent) toast('Data error',d.error,'error');
       return;
     }
+
+    // Snapshot existing IDs BEFORE overwriting TX so we can detect truly new ones
+    const prevTxIds = new Set(TX.map(t=>t.id));
+    const isFirstLoad = !_lastSyncTs;
 
     // Populate global TX, H, and PROJECTS, then re-render everything
     TX=d.transactions||[];
@@ -2425,18 +2474,22 @@ async function loadDashboardData(silent=false){
     // Update overview dot label with sync time
     const ovLbl=document.getElementById('dot-overview-lbl');
     if(ovLbl&&d.syncTs) ovLbl.textContent='Live — last sync '+new Date(d.syncTs).toLocaleTimeString();
-    const wfLbl=document.getElementById('dot-workflow-lbl');
-    if(wfLbl&&TX.length) wfLbl.textContent=`Active — ${TX.length} txns, ${Object.keys(H).length} cards`;
+    // workflow label is managed by pollN8nStatus — do not override here
 
-    // Toast only on first load or when new transactions arrive
-    if(d.syncTs&&d.syncTs!==_lastSyncTs){
-      if(_lastSyncTs&&d.count>TX.length){
-        toast('New transactions','Dashboard updated with latest Plaid data','success');
-      } else if(!_lastSyncTs&&!silent){
-        toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
+    // Detect new transactions and notify
+    if(!isFirstLoad){
+      const newTxns=TX.filter(t=>!prevTxIds.has(t.id));
+      if(newTxns.length){
+        const t=newTxns[0];
+        const cname=ch(t.c).name||('Card ••••'+t.c);
+        const msg=`${fmt(t.a)} at ${t.m} — Slack sent to ${cname}`;
+        showNewTxnCard(msg);
+        toast('New Transaction',msg,'new-txn');
       }
-      _lastSyncTs=d.syncTs;
+    } else if(!silent){
+      toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
     }
+    if(d.syncTs) _lastSyncTs=d.syncTs;
   }catch(e){
     if(!silent) toast('Connection error','Could not reach Worker: '+e.message,'error');
   }
