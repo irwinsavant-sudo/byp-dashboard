@@ -671,6 +671,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
             <button class="dp-qbtn" onclick="setQuickDate('today',this)">Today</button>
             <button class="dp-qbtn" onclick="setQuickDate('week',this)">This Week</button>
             <button class="dp-qbtn" onclick="setQuickDate('month',this)">This Month</button>
+            <button class="dp-qbtn" onclick="setQuickDate('prev-month',this)">Last Month</button>
             <button class="dp-qbtn on" id="dp-all-btn" onclick="setQuickDate('all',this)">All Time</button>
           </div>
           <div class="dp-divider"></div>
@@ -2350,7 +2351,7 @@ function setQuickDate(type, el){
   const now=new Date();
   const toISO=d=>d.toISOString().slice(0,10);
   activeDateQuick=type;
-  document.querySelectorAll('.dp-qbtn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#dp-pop .dp-qbtn').forEach(b=>b.classList.remove('on'));
   if(el) el.classList.add('on');
   if(type==='today'){
     dateFrom=dateTo=toISO(now);
@@ -2361,6 +2362,10 @@ function setQuickDate(type, el){
   } else if(type==='month'){
     dateFrom=toISO(new Date(now.getFullYear(),now.getMonth(),1));
     dateTo=toISO(now);
+  } else if(type==='prev-month'){
+    const pm=new Date(now.getFullYear(),now.getMonth()-1,1);
+    const pme=new Date(now.getFullYear(),now.getMonth(),0);
+    dateFrom=toISO(pm); dateTo=toISO(pme);
   } else {
     dateFrom=dateTo='';
   }
@@ -2393,7 +2398,7 @@ function clearDateFilter(){
   const toEl  =document.getElementById('dp-to');
   if(fromEl) fromEl.value='';
   if(toEl)   toEl.value  ='';
-  document.querySelectorAll('.dp-qbtn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#dp-pop .dp-qbtn').forEach(b=>b.classList.remove('on'));
   const allBtn=document.getElementById('dp-all-btn');
   if(allBtn) allBtn.classList.add('on');
   _applyDateState();
@@ -2518,7 +2523,8 @@ function readAndGoToNotif(id){
     requestAnimationFrame(()=>{
       buildList(); buildDetail();
       requestAnimationFrame(()=>{
-        const row=document.querySelector(`.txnitem[data-txn-id="${CSS.escape(n.txnId)}"]`);
+        const allRows=document.querySelectorAll('.txnitem');
+        const row=[...allRows].find(r=>r.dataset.txnId===n.txnId);
         if(row){
           row.scrollIntoView({behavior:'smooth',block:'center'});
           row.classList.add('notif-highlight');
@@ -2564,7 +2570,7 @@ function loadPrevNotifs(){
     _notifs.push({
       id:++_notifIdSeq,
       msg:`${fmt(t.a)} at ${t.m} — ${cname} notified in Slack`,
-      type:'txn', time:new Date(t.dt+'T'+(t.tm||'12:00')).getTime(), read:true
+      type:'txn', txnId:t.id, time:new Date(t.dt+'T'+(t.tm||'12:00')).getTime(), read:true
     });
   });
   _renderNotifBody();
