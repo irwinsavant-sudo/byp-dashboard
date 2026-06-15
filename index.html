@@ -534,6 +534,46 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
         <div class="pntitle"><i class="ti ti-list" aria-hidden="true"></i> Transactions</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:12px;color:var(--t3);display:inline-flex;align-items:center;gap:6px" id="txn-count-lbl">— transactions</span>
+          <div class="dp-wrap">
+            <button class="btn btn-sm" id="feed-dp-btn" onclick="toggleFeedDatePicker()" title="Filter by date" aria-label="Filter by date" style="position:relative;padding:5px 9px">
+              <i class="ti ti-calendar" aria-hidden="true"></i>
+              <span id="feed-dp-label">This Month</span>
+              <span id="feed-dp-dot" class="sf-dot" style="display:block"></span>
+            </button>
+            <div class="dp-pop" id="feed-dp-pop" style="display:none;left:auto;right:0" role="dialog" aria-label="Date filter">
+              <div class="dp-section-lbl">Quick Select</div>
+              <div class="dp-quick">
+                <button class="dp-qbtn" onclick="setFeedQuickDate('today',this)">Today</button>
+                <button class="dp-qbtn" onclick="setFeedQuickDate('week',this)">This Week</button>
+                <button class="dp-qbtn on" id="feed-dp-month-btn" onclick="setFeedQuickDate('month',this)">This Month</button>
+                <button class="dp-qbtn" onclick="setFeedQuickDate('prev-month',this)">Last Month</button>
+                <button class="dp-qbtn" onclick="setFeedQuickDate('all',this)" id="feed-dp-all-btn">All Time</button>
+              </div>
+              <div class="dp-divider"></div>
+              <div class="dp-section-lbl">Custom Range</div>
+              <div class="dp-row">
+                <div>
+                  <div class="dp-lbl">From</div>
+                  <input type="date" class="dp-input" id="feed-dp-from" onchange="onFeedDateInputChange()">
+                </div>
+                <div>
+                  <div class="dp-lbl">To</div>
+                  <input type="date" class="dp-input" id="feed-dp-to" onchange="onFeedDateInputChange()">
+                </div>
+              </div>
+              <div class="dp-actions">
+                <button class="btn btn-sm btn-danger" onclick="clearFeedDateFilter()" style="font-size:11px">
+                  <i class="ti ti-x" aria-hidden="true"></i> Clear
+                </button>
+                <div id="feed-dp-active-badge" style="flex:1;padding:0 8px">
+                  <span class="dp-range-badge" id="feed-dp-range-text"></span>
+                </div>
+                <button class="btn btn-sm btn-amber" onclick="applyFeedDateFilter()">
+                  <i class="ti ti-check" aria-hidden="true"></i> Apply
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="sf-wrap">
             <button class="btn btn-sm" id="sf-btn" onclick="toggleStatusFilter()" title="Filter by status" aria-label="Filter by status" style="position:relative;padding:5px 9px">
               <i class="ti ti-filter" aria-hidden="true"></i>
@@ -987,6 +1027,12 @@ const REMIND_WEBHOOK_SECRET   = '868875f9c928fe2f139b5361f9e7059e86e938c3c3d970a
 
 let selId=null, cfilt='ALL', sFilter='ALL';
 let dateFrom='', dateTo='', activeDateQuick='all';
+// Live Feed date filter — separate state, defaults to current month
+const _toISO=d=>d.toISOString().slice(0,10);
+const _now=new Date();
+let feedDateFrom=_toISO(new Date(_now.getFullYear(),_now.getMonth(),1));
+let feedDateTo=_toISO(_now);
+let feedActiveDateQuick='month';
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────
 // Safe cardholder lookup — never crashes if card missing from H
@@ -1314,16 +1360,18 @@ function buildList(){
   const el=document.getElementById('txnlist');
   const rows=TX
     .filter(t=>cfilt==='ALL'||t.c===cfilt)
-    .filter(t=>sFilter==='ALL'||effectiveSt(t)===sFilter);
+    .filter(t=>sFilter==='ALL'||effectiveSt(t)===sFilter)
+    .filter(t=>inFeedDateRange(t.dt));
   const cl=document.getElementById('txn-count-lbl');
   if(cl){
     const countTxt=`${rows.length} transaction${rows.length!==1?'s':''}`;
     const badgeHtml=sFilter!=='ALL'?badge(sFilter):'';
-    cl.innerHTML=badgeHtml?`${countTxt} — ${badgeHtml}`:countTxt;
+    const dateCtx=feedActiveDateQuick==='all'?'':feedActiveDateQuick==='month'?' · This Month':feedActiveDateQuick==='prev-month'?' · Last Month':feedActiveDateQuick==='week'?' · This Week':feedActiveDateQuick==='today'?' · Today':feedDateFrom?' · Custom':'';
+    cl.innerHTML=(badgeHtml?`${countTxt} — ${badgeHtml}`:countTxt)+`<span style="color:var(--t3)">${dateCtx}</span>`;
   }
   if(!rows.length){
     const msg=TX.length
-      ? (sFilter!=='ALL'?`No ${sFilter} transactions`:'No transactions for this card')
+      ? (sFilter!=='ALL'?`No ${sFilter} transactions for this period`:'No transactions for this period')
       : 'Waiting for live data from Plaid…';
     el.innerHTML=`<div class="dempty"><i class="ti ti-inbox" aria-hidden="true"></i><span>${msg}</span></div>`;
     return;
@@ -2338,12 +2386,95 @@ function _applyDateState(){
   buildSheet();
 }
 
+// ─── LIVE FEED DATE FILTER ───────────────────────────────────────────────────
+function inFeedDateRange(d){
+  if(!feedDateFrom && !feedDateTo) return true;
+  if(!d) return true;
+  const dt=d.slice(0,10);
+  if(feedDateFrom && dt < feedDateFrom) return false;
+  if(feedDateTo   && dt > feedDateTo)   return false;
+  return true;
+}
+
+function toggleFeedDatePicker(){
+  const pop=document.getElementById('feed-dp-pop');
+  const isOpen=pop.style.display==='block';
+  closeAllPopovers();
+  pop.style.display=isOpen?'none':'block';
+}
+
+function setFeedQuickDate(type, el){
+  const now=new Date();
+  feedActiveDateQuick=type;
+  document.querySelectorAll('#feed-dp-pop .dp-qbtn').forEach(b=>b.classList.remove('on'));
+  if(el) el.classList.add('on');
+  if(type==='today'){
+    feedDateFrom=feedDateTo=_toISO(now);
+  } else if(type==='week'){
+    const mon=new Date(now);
+    mon.setDate(now.getDate()-((now.getDay()||7)-1));
+    feedDateFrom=_toISO(mon); feedDateTo=_toISO(now);
+  } else if(type==='month'){
+    feedDateFrom=_toISO(new Date(now.getFullYear(),now.getMonth(),1));
+    feedDateTo=_toISO(now);
+  } else if(type==='prev-month'){
+    const pm=new Date(now.getFullYear(),now.getMonth()-1,1);
+    const pme=new Date(now.getFullYear(),now.getMonth(),0);
+    feedDateFrom=_toISO(pm); feedDateTo=_toISO(pme);
+  } else {
+    feedDateFrom=feedDateTo='';
+  }
+  const fromEl=document.getElementById('feed-dp-from');
+  const toEl  =document.getElementById('feed-dp-to');
+  if(fromEl) fromEl.value=feedDateFrom;
+  if(toEl)   toEl.value  =feedDateTo;
+  _applyFeedDateState();
+  closeAllPopovers();
+}
+
+function onFeedDateInputChange(){
+  document.querySelectorAll('#feed-dp-pop .dp-qbtn').forEach(b=>b.classList.remove('on'));
+  feedActiveDateQuick='custom';
+}
+
+function applyFeedDateFilter(){
+  feedDateFrom=document.getElementById('feed-dp-from')?.value||'';
+  feedDateTo  =document.getElementById('feed-dp-to')?.value  ||'';
+  if(feedDateFrom&&feedDateTo&&feedDateFrom>feedDateTo){[feedDateFrom,feedDateTo]=[feedDateTo,feedDateFrom];}
+  feedActiveDateQuick='custom';
+  _applyFeedDateState();
+  closeAllPopovers();
+}
+
+function clearFeedDateFilter(){
+  feedDateFrom=feedDateTo=''; feedActiveDateQuick='all';
+  const fromEl=document.getElementById('feed-dp-from');
+  const toEl  =document.getElementById('feed-dp-to');
+  if(fromEl) fromEl.value='';
+  if(toEl)   toEl.value  ='';
+  document.querySelectorAll('#feed-dp-pop .dp-qbtn').forEach(b=>b.classList.remove('on'));
+  const allBtn=document.getElementById('feed-dp-all-btn');
+  if(allBtn) allBtn.classList.add('on');
+  _applyFeedDateState();
+}
+
+function _applyFeedDateState(){
+  const lbl=document.getElementById('feed-dp-label');
+  const dot=document.getElementById('feed-dp-dot');
+  const hasRange=!!(feedDateFrom||feedDateTo);
+  const labels={today:'Today',week:'This Week',month:'This Month','prev-month':'Last Month',all:'All Time',custom:'Custom'};
+  if(lbl) lbl.textContent=labels[feedActiveDateQuick]||(feedDateFrom&&feedDateTo&&feedDateFrom===feedDateTo?feedDateFrom:(feedDateFrom||'…')+' → '+(feedDateTo||'…'));
+  if(dot) dot.style.display=(feedActiveDateQuick==='all'&&!hasRange)?'none':'block';
+  buildList();
+  if(selId){ const t=TX.find(x=>x.id===selId); if(!t||!inFeedDateRange(t.dt)) selId=null; }
+  buildDetail();
+}
+
 // ─── CLOSE ALL POPOVERS ───────────────────────────────────────────────────────
 function closeAllPopovers(){
-  const sfp=document.getElementById('sf-pop');
-  const dpp=document.getElementById('dp-pop');
-  if(sfp) sfp.style.display='none';
-  if(dpp) dpp.style.display='none';
+  ['sf-pop','dp-pop','feed-dp-pop'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
 }
 // Close on outside click
 document.addEventListener('click',e=>{
