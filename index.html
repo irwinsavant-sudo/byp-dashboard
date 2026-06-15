@@ -272,8 +272,9 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ── RESPONSIVE ──────────────────────── */
+/* 960px — tablet landscape: collapse sidebar to icon-only */
 @media(max-width:960px){
-  :root{--nav:58px}
+  :root{--nav:56px}
   .navitem span,.navpill,.navlbl,.brand-sub,.brand-name{display:none}
   .navitem{justify-content:center;padding:10px}
   .statgrid{grid-template-columns:repeat(2,1fr)}
@@ -282,6 +283,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .holdergrid{grid-template-columns:1fr}
   .wfgrid{grid-template-columns:1fr}
   .section-row{grid-template-columns:1fr}
+  .secgrid{grid-template-columns:repeat(2,1fr)}
+  #detailwrap{position:static;max-height:none}
 }
 /* ── MOBILE NAV ──────────────────────── */
 .mob-hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--rsm);background:transparent;border:1px solid var(--bdr2);cursor:pointer;color:var(--t2);flex-shrink:0;font-size:20px}
@@ -289,14 +292,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .mob-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:190;backdrop-filter:blur(2px)}
 .mob-backdrop.open{display:block}
 
-/* 960px — tablet landscape */
-@media(max-width:960px){
-  :root{--nav:56px}
-  .statgrid{grid-template-columns:repeat(3,1fr)}
-  #detailwrap{position:static;max-height:none}
-  .feedlayout{grid-template-columns:1fr}
-  .secgrid{grid-template-columns:repeat(2,1fr)}
-}
+
 
 /* 768px — tablet portrait / large phone */
 @media(max-width:768px){
@@ -306,6 +302,12 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .topbar{grid-column:unset;position:sticky;top:0;z-index:150;width:100%}
   .sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:240px;z-index:200;box-shadow:6px 0 32px rgba(0,0,0,.7);overflow-y:auto;padding:calc(var(--hdr) + 8px) 8px 16px;flex-direction:column}
   .sidebar.mob-open{display:flex}
+  .sidebar.mob-open .navitem span,
+  .sidebar.mob-open .navpill,
+  .sidebar.mob-open .navlbl,
+  .sidebar.mob-open .brand-sub,
+  .sidebar.mob-open .brand-name{display:block}
+  .sidebar.mob-open .navitem{justify-content:flex-start;padding:9px 12px}
   .main{overflow-y:visible;flex:1;width:100%}
   .page{padding:14px}
   .mob-hamburger{display:flex}
@@ -2111,23 +2113,33 @@ function toast(title,msg,type='info'){
 }
 
 // ─── NEW TRANSACTION CARD ────────────────────────────────────────────────────
-let _newTxnTimer = null;
-function showNewTxnCard(msg){
+let _newTxnQueue=[];
+let _newTxnTimer=null;
+
+function _showNextTxnCard(){
+  if(!_newTxnQueue.length){ dismissNewTxnCard(); return; }
+  const msg=_newTxnQueue.shift();
   const card=document.getElementById('new-txn-card');
   const msgEl=document.getElementById('new-txn-card-msg');
   if(!card||!msgEl) return;
   msgEl.textContent=msg;
   card.style.display='block';
   card.style.animation='none';
-  void card.offsetWidth; // reflow to restart animation
+  void card.offsetWidth;
   card.style.animation='toastIn .3s ease-out';
   if(_newTxnTimer) clearTimeout(_newTxnTimer);
-  _newTxnTimer=setTimeout(dismissNewTxnCard, 8000);
+  _newTxnTimer=setTimeout(_showNextTxnCard, 6000);
+}
+function showNewTxnCard(msgs){
+  const arr=Array.isArray(msgs)?msgs:[msgs];
+  _newTxnQueue=arr.slice();
+  _showNextTxnCard();
 }
 function dismissNewTxnCard(){
   const card=document.getElementById('new-txn-card');
   if(card) card.style.display='none';
   if(_newTxnTimer){ clearTimeout(_newTxnTimer); _newTxnTimer=null; }
+  _newTxnQueue=[];
 }
 
 // ─── CHARTS ──────────────────────────────────────────────────────────────────
@@ -2533,7 +2545,10 @@ async function pollN8nStatus(){
 // Runs on page load and every 5 minutes. No page reload needed.
 let _lastSyncTs = '';
 
+let _loadInProgress=false;
 async function loadDashboardData(silent=false){
+  if(_loadInProgress) return;
+  _loadInProgress=true;
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
     const r=await fetch(DASHBOARD_DATA_URL+'?_nc='+Date.now(),{cache:'no-store'});
@@ -2576,11 +2591,11 @@ async function loadDashboardData(silent=false){
     if(!isFirstLoad){
       const newTxns=TX.filter(t=>!prevTxIds.has(t.id));
       if(newTxns.length){
-        const t=newTxns[0];
-        const cname=ch(t.c).name||('Card ••••'+t.c);
-        const msg=`${fmt(t.a)} at ${t.m} — Slack sent to ${cname}`;
-        showNewTxnCard(msg);
-        toast('New Transaction',msg,'new-txn');
+        const msgs=newTxns.map(t=>{
+          const cname=ch(t.c).name||('Card ••••'+t.c);
+          return `${fmt(t.a)} at ${t.m} — Slack sent to ${cname}`;
+        });
+        showNewTxnCard(msgs);
       }
     } else if(!silent){
       toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
@@ -2588,6 +2603,8 @@ async function loadDashboardData(silent=false){
     if(d.syncTs) _lastSyncTs=d.syncTs;
   }catch(e){
     if(!silent) toast('Connection error','Could not reach Worker: '+e.message,'error');
+  }finally{
+    _loadInProgress=false;
   }
   // initCharts is outside the fetch try/catch so Chart.js errors surface
   // clearly instead of being swallowed as "Could not reach Worker"
