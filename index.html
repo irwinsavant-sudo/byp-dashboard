@@ -203,9 +203,10 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .wfgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .wfcard{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r);padding:18px}
 .wftitle{font-size:13px;font-weight:700;display:flex;align-items:center;gap:9px;margin-bottom:14px}
-.wfrow{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.wfrow{display:flex;justify-content:space-between;align-items:flex-start;font-size:12px;padding:6px 0;border-bottom:1px solid var(--bdr);gap:8px}
 .wfrow:last-child{border-bottom:none}
-.wflbl{color:var(--t3)}
+.wflbl{color:var(--t3);white-space:nowrap;flex-shrink:0}
+.wfval{text-align:right;word-break:break-word;overflow-wrap:break-word;min-width:0}
 .secgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:4px}
 .secitem-lbl{font-size:10px;color:var(--t3);margin-bottom:5px}
 .secitem-val{font-size:12px;font-weight:700}
@@ -353,6 +354,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .secgrid{grid-template-columns:repeat(2,1fr)}
   .txnitem{grid-template-columns:36px 1fr 80px}
   .txndate{display:none}
+  /* Workflow cards — stack label above value on tablet/phone */
+  .wfgrid{grid-template-columns:1fr;gap:10px}
+  .wfcard{padding:14px}
+  .wfcard[style*="span 2"]{grid-column:span 1}
+  .wftitle{font-size:12px;flex-wrap:wrap}
+  .wfrow{flex-direction:column;align-items:flex-start;gap:1px}
+  .wflbl{font-size:11px}
+  .wfval{text-align:left}
   .panel{overflow-x:auto}
   .stbl{min-width:560px}
 }
@@ -392,11 +401,11 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .modal-title{font-size:15px}
 
   /* Workflow cards — stack label above value */
-  .wfgrid{grid-template-columns:1fr;gap:10px}
+  .wfgrid{grid-template-columns:1fr;gap:8px}
   .wfcard{padding:12px}
   .wfcard[style*="span 2"]{grid-column:span 1}
   .wftitle{font-size:11px;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-  .wfrow{flex-direction:column;align-items:flex-start;gap:2px;padding:6px 0;font-size:11px}
+  .wfrow{font-size:11px}
   .wflbl{font-size:10px}
 
   /* Security grid — 2 cols on phone */
@@ -828,57 +837,57 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   <div class="wfgrid">
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf1" style="flex-shrink:0" aria-hidden="true"></span> WF1 — Plaid Ingest + HTML Rebuild</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span id="wf1-status" style="color:var(--t3)">Checking…</span></div>
-      <div class="wfrow"><span class="wflbl">Source</span><span style="color:var(--t3)">Plaid API (sandbox → production)</span></div>
-      <div class="wfrow"><span class="wflbl">Poll interval</span><span style="color:var(--t3)">Every 5 minutes</span></div>
-      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf1-lastrun" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Transactions today</span><span id="wf1exec" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf1-errors" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span class="wfval" id="wf1-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Source</span><span class="wfval" style="color:var(--t3)">Plaid API (sandbox → production)</span></div>
+      <div class="wfrow"><span class="wflbl">Poll interval</span><span class="wfval" style="color:var(--t3)">Every 5 minutes</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span class="wfval" id="wf1-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Transactions today</span><span class="wfval" id="wf1exec" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span class="wfval" id="wf1-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf2" style="flex-shrink:0" aria-hidden="true"></span> WF2 — Slack Notifier</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span id="wf2-status" style="color:var(--t3)">Checking…</span></div>
-      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf2-lastrun" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Messages sent</span><span id="wf2sent" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Block Kit template</span><span id="wf2-template" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Card routing table</span><span id="wf2cards" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf2-errors" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span class="wfval" id="wf2-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span class="wfval" id="wf2-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Messages sent</span><span class="wfval" id="wf2sent" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Block Kit template</span><span class="wfval" id="wf2-template" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Card routing table</span><span class="wfval" id="wf2cards" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span class="wfval" id="wf2-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf3" style="flex-shrink:0" aria-hidden="true"></span> WF3 — Slack Response Collector</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span id="wf3-status" style="color:var(--t3)">Checking…</span></div>
-      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf3-lastrun" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Responses received</span><span id="wf3resp" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Sheets updates</span><span id="wf3updates" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Interactivity webhook</span><span id="wf3-webhook" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf3-errors" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span class="wfval" id="wf3-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span class="wfval" id="wf3-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Responses received</span><span class="wfval" id="wf3resp" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Sheets updates</span><span class="wfval" id="wf3updates" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Interactivity webhook</span><span class="wfval" id="wf3-webhook" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span class="wfval" id="wf3-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf4" style="flex-shrink:0" aria-hidden="true"></span> WF4 — Weekly Summary</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span id="wf4-status" style="color:var(--t3)">Checking…</span></div>
-      <div class="wfrow"><span class="wflbl">Schedule</span><span style="color:var(--t3)">Every Friday 9:00 AM</span></div>
-      <div class="wfrow"><span class="wflbl">Last run</span><span id="wf4-lastrun" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Recipients</span><span style="color:var(--t3)">Accountant only</span></div>
-      <div class="wfrow"><span class="wflbl">Emails sent</span><span id="wf4-emails" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf4-errors" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span class="wfval" id="wf4-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Schedule</span><span class="wfval" style="color:var(--t3)">Every Friday 9:00 AM</span></div>
+      <div class="wfrow"><span class="wflbl">Last run</span><span class="wfval" id="wf4-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Recipients</span><span class="wfval" style="color:var(--t3)">Accountant only</span></div>
+      <div class="wfrow"><span class="wflbl">Emails sent</span><span class="wfval" id="wf4-emails" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span class="wfval" id="wf4-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf5" style="flex-shrink:0" aria-hidden="true"></span> WF5 — QuickBooks Push</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span id="wf5-status" style="color:var(--t3)">Checking…</span></div>
-      <div class="wfrow"><span class="wflbl">Last sync</span><span id="wf5-lastsync" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Total records synced</span><span id="wf5-totalsynced" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Ready to sync now</span><span id="qb-ready" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Trigger</span><span style="color:var(--t3)">Dashboard button → n8n webhook</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf5-errors" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span class="wfval" id="wf5-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last sync</span><span class="wfval" id="wf5-lastsync" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Total records synced</span><span class="wfval" id="wf5-totalsynced" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Ready to sync now</span><span class="wfval" id="qb-ready" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Trigger</span><span class="wfval" style="color:var(--t3)">Dashboard button → n8n webhook</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span class="wfval" id="wf5-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard">
       <div class="wftitle"><span class="sysdot off" id="dot-wf6" style="flex-shrink:0" aria-hidden="true"></span> WF6 — Project Management</div>
-      <div class="wfrow"><span class="wflbl">Status</span><span id="wf6-status" style="color:var(--t3)">Checking…</span></div>
-      <div class="wfrow"><span class="wflbl">Last triggered</span><span id="wf6-lastrun" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Projects active</span><span id="wf6projects" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Webhook</span><span id="wf6-webhook" style="color:var(--t3)">—</span></div>
-      <div class="wfrow"><span class="wflbl">Trigger</span><span style="color:var(--t3)">Dashboard → Sheets → n8n</span></div>
-      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span id="wf6-errors" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Status</span><span class="wfval" id="wf6-status" style="color:var(--t3)">Checking…</span></div>
+      <div class="wfrow"><span class="wflbl">Last triggered</span><span class="wfval" id="wf6-lastrun" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Projects active</span><span class="wfval" id="wf6projects" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Webhook</span><span class="wfval" id="wf6-webhook" style="color:var(--t3)">—</span></div>
+      <div class="wfrow"><span class="wflbl">Trigger</span><span class="wfval" style="color:var(--t3)">Dashboard → Sheets → n8n</span></div>
+      <div class="wfrow"><span class="wflbl">Errors (24h)</span><span class="wfval" id="wf6-errors" style="color:var(--t3)">—</span></div>
     </div>
     <div class="wfcard" style="grid-column:span 2">
       <div class="wftitle"><i class="ti ti-shield" style="color:var(--t3)" aria-hidden="true"></i> Security Configuration — Target Architecture (not yet active)</div>
