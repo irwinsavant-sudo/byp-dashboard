@@ -339,48 +339,95 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   :root{--hdr:48px}
   .page{padding:10px}
   .ptitle{font-size:18px}
-  .psub{font-size:12px}
-  .phdr{margin-bottom:12px}
+  .psub{font-size:12px;display:none}
+  .phdr{margin-bottom:12px;gap:8px}
+  .phdr-actions{gap:6px;flex-wrap:wrap}
+
+  /* Stat cards */
   .statgrid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
   .statcard{padding:12px 14px}
   .statval{font-size:22px}
   .statlbl{font-size:11px;margin-bottom:7px}
   .statsub{font-size:11px}
+
+  /* Buttons — compact */
+  .btn{padding:6px 10px;font-size:11px;gap:5px}
+  .btn i{font-size:13px}
+  .btn-sm{padding:4px 8px;font-size:10px}
+
+  /* Transaction list */
   .chips{padding:8px 10px;gap:4px}
   .chip{padding:3px 9px;font-size:10px}
-  .txnitem{grid-template-columns:36px 1fr auto;padding:10px 12px;gap:6px 8px}
+  .txnitem{grid-template-columns:32px 1fr auto;padding:10px 10px;gap:5px 8px}
   .merchant{font-size:12px}
   .txnmeta{font-size:10px}
   .amount{font-size:12px}
-  .modal{padding:18px;border-radius:12px;max-width:96vw}
-  .modal-title{font-size:16px}
-  .wfcard{padding:14px}
-  .wftitle{font-size:12px}
-  .holdercard{padding:14px}
-  .hstatval{font-size:20px}
-  .secgrid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .txnavatar{width:32px;height:32px;font-size:11px}
+
+  /* Modal */
+  .modal{padding:16px;border-radius:10px;max-width:96vw}
+  .modal-title{font-size:15px}
+
+  /* Workflow cards — stack label above value */
+  .wfgrid{grid-template-columns:1fr;gap:10px}
+  .wfcard{padding:12px}
+  .wfcard[style*="span 2"]{grid-column:span 1}
+  .wftitle{font-size:11px;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .wfrow{flex-direction:column;align-items:flex-start;gap:2px;padding:6px 0;font-size:11px}
+  .wflbl{font-size:10px}
+
+  /* Security grid — 2 cols on phone */
+  .secgrid{grid-template-columns:repeat(2,1fr);gap:6px}
+  .secitem-lbl{font-size:9px}
+  .secitem-val{font-size:11px}
+
+  /* Holder cards */
+  .holdercard{padding:12px}
+  .hstatval{font-size:18px}
+  .hstatlbl{font-size:10px}
+  .holdergrid{gap:8px}
+
+  /* Charts */
   .section-row{gap:8px}
   .chartrow{gap:8px}
-  .pnhdr{padding:8px 12px;flex-wrap:wrap;row-gap:8px}
+
+  /* Panel headers */
+  .pnhdr{padding:8px 12px;flex-wrap:wrap;row-gap:6px}
   .pntitle{font-size:12px;width:100%}
-  /* Live Feed pnhdr: hide count label + date text, show icon-only date btn */
+
+  /* Live Feed pnhdr: hide count label + date text */
   #txn-count-lbl{display:none!important}
   #feed-dp-label{display:none}
-  /* Status Sheet: shorten Export label */
+
+  /* Status Sheet: icon-only buttons */
   #export-btn .export-label{display:none}
-  /* Cardholder chips: wrap on 2 lines if needed */
-  .chip{font-size:10px;padding:3px 9px}
+  #dp-label.btn-label{display:none}
+
+  /* Topbar: shrink clock */
+  .clock{font-size:11px;min-width:0}
+
+  /* Detail panel */
+  .drrow{flex-wrap:wrap;gap:6px}
 }
 
 /* 380px — small phone */
 @media(max-width:380px){
-  .statgrid{grid-template-columns:1fr}
-  .statval{font-size:26px}
+  :root{--hdr:44px}
+  .statgrid{grid-template-columns:1fr;gap:6px}
+  .statval{font-size:24px}
   .clock{display:none}
   .brand-sub{display:none}
-  .stbl{min-width:480px}
+  .stbl{min-width:400px}
   #dot-feed-lbl{display:none}
-  .psub{display:none}
+  /* Security grid — 1 col on very small */
+  .secgrid{grid-template-columns:1fr}
+  /* Buttons icon-only in phdr-actions */
+  .phdr-actions .btn .btn-label{display:none}
+  /* wfrow still stacked */
+  .wfrow{font-size:10px}
+  .wftitle{font-size:10px}
+  /* holdercard stat */
+  .hstatval{font-size:16px}
 }
 
 /* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
@@ -673,7 +720,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
       <div class="dp-wrap">
         <button class="btn" id="dp-btn" onclick="toggleDatePicker()" title="Filter by date" aria-label="Filter by date" style="position:relative">
           <i class="ti ti-calendar" aria-hidden="true"></i>
-          <span id="dp-label">All dates</span>
+          <span id="dp-label" class="btn-label">All dates</span>
           <span id="dp-dot" class="sf-dot" style="display:none"></span>
         </button>
         <div class="dp-pop" id="dp-pop" style="display:none" role="dialog" aria-label="Date filter">
@@ -711,7 +758,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
         </div>
       </div>
       <button class="btn" id="export-btn" onclick="doExport()"><i class="ti ti-download" aria-hidden="true"></i><span class="export-label">Export CSV</span></button>
-      <button class="btn btn-teal" id="qb-btn" onclick="openQB()"><i class="ti ti-brand-quickbooks" aria-hidden="true"></i>Push to QuickBooks</button>
+      <button class="btn btn-teal" id="qb-btn" onclick="openQB()"><i class="ti ti-brand-quickbooks" aria-hidden="true"></i><span class="btn-label">Push to QuickBooks</span></button>
     </div>
   </div>
   <div class="panel" style="overflow-x:auto">
