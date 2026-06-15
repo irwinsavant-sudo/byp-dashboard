@@ -402,6 +402,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 .notif-time{font-size:11px;color:var(--amber)}
 .notif-dot{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:var(--teal);flex-shrink:0}
 .notif-empty{padding:32px 16px;text-align:center;color:var(--t3);font-size:13px}
+.txnitem.notif-highlight{background:var(--amberDim)!important;border-left:3px solid var(--amber);transition:background .4s,border-left .4s}
 .notif-footer{border-top:1px solid var(--bdr);padding:10px 16px;flex-shrink:0}
 .notif-footer-btn{width:100%;padding:8px;background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--rsm);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
 .notif-footer-btn:hover{background:var(--s3);color:var(--t1)}
@@ -2432,8 +2433,8 @@ function _timeAgo(ts){
   return `${Math.floor(diff/86400)}d ago`;
 }
 
-function pushNotif(msg, type='txn'){
-  const n={id:++_notifIdSeq, msg, type, time:Date.now(), read:false};
+function pushNotif(msg, type='txn', txnId=null){
+  const n={id:++_notifIdSeq, msg, type, txnId, time:Date.now(), read:false};
   _notifs.unshift(n);
   if(_notifs.length > 100) _notifs.length=100;
   _renderNotifBadge();
@@ -2475,7 +2476,7 @@ function _renderNotifBody(){
 function _notifItemHtml(n){
   const iconClass=n.type==='txn'?'slack':n.type==='success'?'system':'system';
   const icon=n.type==='txn'?'ti-brand-slack':n.type==='error'?'ti-alert-circle':'ti-info-circle';
-  return `<div class="notif-item${n.read?'':' unread'}" onclick="readNotif(${n.id})">
+  return `<div class="notif-item${n.read?'':' unread'}" onclick="readAndGoToNotif(${n.id})">
     <div class="notif-icon ${iconClass}"><i class="ti ${icon}"></i></div>
     <div class="notif-content">
       <div class="notif-msg">${n.msg}</div>
@@ -2490,6 +2491,44 @@ function readNotif(id){
   if(n) n.read=true;
   _renderNotifBadge();
   _renderNotifBody();
+}
+function readAndGoToNotif(id){
+  const n=_notifs.find(x=>x.id===id);
+  if(n) n.read=true;
+  _renderNotifBadge();
+  closeAllPopovers();
+  if(n&&n.txnId){
+    // Ensure the transaction is visible (expand date range if needed)
+    const t=TX.find(x=>x.id===n.txnId);
+    if(t&&t.dt){
+      if(feedActiveDateQuick!=='all'&&(t.dt<feedDateFrom||t.dt>feedDateTo)){
+        // Transaction is outside current date range — expand to All Time
+        feedDateFrom=feedDateTo='';
+        feedActiveDateQuick='all';
+        document.querySelectorAll('#feed-dp-pop .dp-qbtn').forEach(b=>b.classList.remove('on'));
+        const allBtn=document.getElementById('feed-dp-all-btn');
+        if(allBtn) allBtn.classList.add('on');
+        const lbl=document.getElementById('feed-dp-label');
+        if(lbl) lbl.textContent='All Time';
+      }
+    }
+    selId=n.txnId;
+    go('feed',true);
+    // Highlight the row after render
+    requestAnimationFrame(()=>{
+      buildList(); buildDetail();
+      requestAnimationFrame(()=>{
+        const row=document.querySelector(`.txnitem[data-txn-id="${CSS.escape(n.txnId)}"]`);
+        if(row){
+          row.scrollIntoView({behavior:'smooth',block:'center'});
+          row.classList.add('notif-highlight');
+          setTimeout(()=>row.classList.remove('notif-highlight'),2500);
+        }
+      });
+    });
+  } else {
+    go('feed',true);
+  }
 }
 
 function markAllNotifRead(){
@@ -2512,8 +2551,6 @@ function toggleNotifPanel(){
   if(!isOpen){
     panel.classList.add('open');
     _renderNotifBody();
-    // Mark all read after 2s while panel is open
-    setTimeout(()=>{ if(panel.classList.contains('open')){ markAllNotifRead(); } }, 2000);
   }
 }
 
@@ -2864,12 +2901,12 @@ async function loadDashboardData(silent=false){
     if(!isFirstLoad){
       const newTxns=TX.filter(t=>!prevTxIds.has(t.id));
       if(newTxns.length){
-        const msgs=newTxns.map(t=>{
+        const msgMap=newTxns.map(t=>{
           const cname=ch(t.c).name||('Card ••••'+t.c);
-          return `${fmt(t.a)} at ${t.m} — ${cname} notified in Slack`;
+          return {msg:`${fmt(t.a)} at ${t.m} — ${cname} notified in Slack`, txnId:t.id};
         });
-        showNewTxnCard(msgs);
-        msgs.forEach(m=>pushNotif(m,'txn'));
+        showNewTxnCard(msgMap.map(x=>x.msg));
+        msgMap.forEach(x=>pushNotif(x.msg,'txn',x.txnId));
       }
     } else if(!silent){
       toast('Dashboard loaded',`${TX.length} transactions across ${Object.keys(H).length} card${Object.keys(H).length!==1?'s':''}. Monitoring active.`,'success');
