@@ -22,6 +22,29 @@
   --gold:#FCD34D;
   --nav:220px;--hdr:56px;--r:10px;--rsm:6px;
 }
+/* ── LIGHT MODE ─────────────────────────────────────── */
+body.light-mode{
+  --bg:#F0F4F8;--s1:#FFFFFF;--s2:#F0F4F8;--s3:#E2E8F0;--s4:#CBD5E1;
+  --bdr:rgba(0,0,0,0.09);--bdr2:rgba(0,0,0,0.15);
+  --t1:#0F172A;--t2:#475569;--t3:#94A3B8;
+  --amberDim:rgba(245,158,11,0.12);--amberRing:rgba(245,158,11,0.3);
+  --tealDim:rgba(16,185,129,0.12);
+  --blueDim:rgba(96,165,250,0.12);
+  --redDim:rgba(248,113,113,0.12);
+}
+body.light-mode ::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.2)}
+body.light-mode .topbar,
+body.light-mode .sidebar{box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+body.light-mode .brandmark{background:linear-gradient(135deg,#1B3A5C,#2E6DA4)}
+body.light-mode .toast{box-shadow:0 8px 24px rgba(0,0,0,0.15)}
+body.light-mode .notif-panel{box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+body.light-mode .modal-overlay{background:rgba(0,0,0,0.4)}
+body.light-mode .stbl th{background:var(--s3)}
+body.light-mode .slackbubble{background:var(--s3)}
+body.light-mode .slackthread{background:var(--s2)}
+/* Theme toggle button */
+.theme-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:transparent;border:1px solid var(--bdr2);cursor:pointer;color:var(--t2);font-size:17px;flex-shrink:0;transition:all .15s}
+.theme-btn:hover{background:var(--s2);color:var(--t1)}
 html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--t1)}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -487,6 +510,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
     <div class="sysind"><span class="sysdot off" id="dot-qb" aria-hidden="true"></span>QuickBooks</div>
     <div class="sysind"><span class="sysdot off" id="dot-plaid" aria-hidden="true"></span>Plaid</div>
   </div>
+  <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle light/dark mode" title="Toggle light/dark mode"><i class="ti ti-sun" id="theme-icon"></i></button>
   <button class="notif-btn" id="notif-btn" onclick="toggleNotifPanel()" aria-label="Notifications" title="Notifications">
     <i class="ti ti-bell" aria-hidden="true"></i>
     <span class="notif-badge" id="notif-badge" style="display:none">0</span>
@@ -1116,6 +1140,22 @@ const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e135
 const REMIND_WEBHOOK_URL      = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';   // WF-2b: accountant-triggered remind
 const REMIND_WEBHOOK_SECRET   = '868875f9c928fe2f139b5361f9e7059e86e938c3c3d970a61fb61750f45c6df8'; // shared secret for WF-2b
 // DATA:WEBHOOK:END
+
+/* ── THEME ─────────────────────────────────── */
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light-mode');
+  document.getElementById('theme-icon').className=isLight?'ti ti-moon':'ti ti-sun';
+  try{localStorage.setItem('byp-theme',isLight?'light':'dark');}catch(e){}
+}
+(function initTheme(){
+  try{
+    if(localStorage.getItem('byp-theme')==='light'){
+      document.body.classList.add('light-mode');
+      const ic=document.getElementById('theme-icon');
+      if(ic) ic.className='ti ti-moon';
+    }
+  }catch(e){}
+})();
 
 let selId=null, cfilt='ALL', sFilter='ALL';
 let dateFrom='', dateTo='', activeDateQuick='all';
