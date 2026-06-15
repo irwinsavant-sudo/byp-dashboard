@@ -283,11 +283,91 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
   .wfgrid{grid-template-columns:1fr}
   .section-row{grid-template-columns:1fr}
 }
-@media(max-width:640px){
-  :root{--nav:0px}
-  .sidebar{display:none}
-  .statgrid{grid-template-columns:1fr 1fr}
-  .txnitem{grid-template-columns:36px 1fr 90px auto}
+/* ── MOBILE NAV ──────────────────────── */
+.mob-hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--rsm);background:transparent;border:1px solid var(--bdr2);cursor:pointer;color:var(--t2);flex-shrink:0;font-size:20px}
+.mob-hamburger:hover{background:var(--s2);color:var(--t1)}
+.mob-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:190;backdrop-filter:blur(2px)}
+.mob-backdrop.open{display:block}
+
+/* 960px — tablet landscape */
+@media(max-width:960px){
+  :root{--nav:56px}
+  .statgrid{grid-template-columns:repeat(3,1fr)}
+  #detailwrap{position:static;max-height:none}
+  .feedlayout{grid-template-columns:1fr}
+  .secgrid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* 768px — tablet portrait / large phone */
+@media(max-width:768px){
+  :root{--nav:0px;--hdr:52px}
+  html,body{height:auto;overflow-x:hidden;overflow-y:auto}
+  .shell{display:flex;flex-direction:column;height:auto;min-height:100svh;grid-template-rows:unset;grid-template-columns:unset}
+  .topbar{grid-column:unset;position:sticky;top:0;z-index:150;width:100%}
+  .sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:240px;z-index:200;box-shadow:6px 0 32px rgba(0,0,0,.7);overflow-y:auto;padding:calc(var(--hdr) + 8px) 8px 16px;flex-direction:column}
+  .sidebar.mob-open{display:flex}
+  .main{overflow-y:visible;flex:1;width:100%}
+  .page{padding:14px}
+  .mob-hamburger{display:flex}
+  .sysinds{display:none}
+  .clock{font-size:12px;padding-left:10px;border-left:none;min-width:auto}
+  .phdr{flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .phdr-actions{flex-wrap:wrap;gap:8px}
+  #new-txn-card{min-width:0;max-width:100%}
+  .statgrid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+  .statcard{padding:16px 18px}
+  .statval{font-size:28px}
+  .chartrow{grid-template-columns:1fr;margin-bottom:16px}
+  .feedlayout{grid-template-columns:1fr}
+  #detailwrap{position:static;max-height:none}
+  .holdergrid{grid-template-columns:1fr}
+  .wfgrid{grid-template-columns:1fr}
+  .section-row{grid-template-columns:1fr;margin-top:14px}
+  .secgrid{grid-template-columns:repeat(2,1fr)}
+  .txnitem{grid-template-columns:36px 1fr 80px}
+  .txndate{display:none}
+  .panel{overflow-x:auto}
+  .stbl{min-width:560px}
+}
+
+/* 480px — phone portrait */
+@media(max-width:480px){
+  :root{--hdr:48px}
+  .page{padding:10px}
+  .ptitle{font-size:18px}
+  .psub{font-size:12px}
+  .phdr{margin-bottom:12px}
+  .statgrid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .statcard{padding:12px 14px}
+  .statval{font-size:22px}
+  .statlbl{font-size:11px;margin-bottom:7px}
+  .statsub{font-size:11px}
+  .chips{padding:8px 10px;gap:4px}
+  .chip{padding:3px 9px;font-size:10px}
+  .txnitem{grid-template-columns:32px 1fr auto;padding:10px;gap:8px}
+  .merchant{font-size:12px}
+  .txnmeta{font-size:10px}
+  .amount{font-size:12px}
+  .modal{padding:18px;border-radius:12px;max-width:96vw}
+  .modal-title{font-size:16px}
+  .wfcard{padding:14px}
+  .wftitle{font-size:12px}
+  .holdercard{padding:14px}
+  .hstatval{font-size:20px}
+  .secgrid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .section-row{gap:8px}
+  .chartrow{gap:8px}
+  .pnhdr{padding:10px 12px}
+  .pntitle{font-size:12px}
+}
+
+/* 380px — small phone */
+@media(max-width:380px){
+  .statgrid{grid-template-columns:1fr}
+  .statval{font-size:26px}
+  .clock{display:none}
+  .brand-sub{display:none}
+  .stbl{min-width:480px}
 }
 
 /* ── DETAIL PANEL INLINE EDIT CONTROLS ── */
@@ -302,7 +382,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 
 <!-- ═══ TOP BAR ════════════════════════ -->
 <header class="topbar" role="banner">
-  <div class="brand">
+  <button class="mob-hamburger" onclick="openMobNav()" aria-label="Open navigation menu" aria-expanded="false" id="mob-hamburger-btn"><i class="ti ti-menu-2"></i></button>
+    <div class="brand">
     <div class="brandmark" aria-hidden="true">BP</div>
     <div>
       <div class="brand-name">Backyard Pod — Accounting App</div>
@@ -321,7 +402,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;f
 </header>
 
 <!-- ═══ SIDEBAR ════════════════════════ -->
-<nav class="sidebar" role="navigation" aria-label="Dashboard sections">
+<div class="mob-backdrop" id="mob-backdrop" onclick="closeMobNav()"></div>
+<nav class="sidebar" id="sidebar" role="navigation" aria-label="Dashboard sections">
   <div class="navlbl">Main</div>
   <div class="navitem active" id="nav-overview" onclick="go('overview')" role="button" tabindex="0" aria-current="page">
     <i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Overview</span>
@@ -983,13 +1065,27 @@ function updStats(){
 // ─── NAV ────────────────────────────────────────────────────────────────────
 const VALID_PAGES = ['overview','feed','sheet','cardholders','projects','workflow'];
 
+function openMobNav(){
+  document.getElementById('sidebar').classList.add('mob-open');
+  document.getElementById('mob-backdrop').classList.add('open');
+  document.getElementById('mob-hamburger-btn').setAttribute('aria-expanded','true');
+  document.body.style.overflow='hidden';
+}
+function closeMobNav(){
+  document.getElementById('sidebar').classList.remove('mob-open');
+  document.getElementById('mob-backdrop').classList.remove('open');
+  document.getElementById('mob-hamburger-btn').setAttribute('aria-expanded','false');
+  document.body.style.overflow='';
+}
 function go(page, skipHistory){
   if(!VALID_PAGES.includes(page)) page='overview';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.navitem').forEach(n=>{n.classList.remove('active');n.removeAttribute('aria-current');});
   document.getElementById('page-'+page).classList.add('active');
   const ni=document.getElementById('nav-'+page);if(ni){ni.classList.add('active');ni.setAttribute('aria-current','page');}
-  document.getElementById('main').scrollTop=0;
+  closeMobNav();
+  if(window.innerWidth>768) document.getElementById('main').scrollTop=0;
+  else window.scrollTo(0,0);
   if(page==='sheet')buildSheet();
   if(page==='cardholders')buildHolders();
   if(page==='overview'){buildRecent();buildAttention();}
