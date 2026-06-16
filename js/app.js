@@ -136,7 +136,106 @@ const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard
 const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa';
 const REMIND_WEBHOOK_URL      = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';
 const REMIND_WEBHOOK_SECRET   = '868875f9c928fe2f139b5361f9e7059e86e938c3c3d970a61fb61750f45c6df8';
+const GOOGLE_CLIENT_ID        = '';
 // DATA:WEBHOOK:END
+
+/* ── AUTH ──────────────────────────────────────────────────────────────────── */
+// Stores the Google ID token for the current session (memory + sessionStorage).
+// Token expires after 1 hour — user is prompted to re-sign-in automatically.
+
+function _getToken() {
+  try { return sessionStorage.getItem('byp_g_token') || null; } catch { return null; }
+}
+function _setToken(t) {
+  try { sessionStorage.setItem('byp_g_token', t); } catch {}
+}
+function _clearToken() {
+  try { sessionStorage.removeItem('byp_g_token'); } catch {}
+}
+
+// authFetch — drop-in replacement for fetch() that attaches the Bearer token.
+// On 401, clears the session and shows the login overlay.
+async function authFetch(url, options = {}) {
+  const token = _getToken();
+  if (!token) { showLoginOverlay(); throw new Error('Not authenticated'); }
+  const headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    _clearToken();
+    showLoginOverlay();
+    toast('Session expired', 'Please sign in again.', 'warn');
+    throw new Error('Session expired');
+  }
+  return res;
+}
+
+function showLoginOverlay() {
+  const el = document.getElementById('login-overlay');
+  if (el) el.style.display = 'flex';
+  const shell = document.querySelector('.shell');
+  if (shell) shell.style.visibility = 'hidden';
+}
+function hideLoginOverlay() {
+  const el = document.getElementById('login-overlay');
+  if (el) el.style.display = 'none';
+  const shell = document.querySelector('.shell');
+  if (shell) shell.style.visibility = '';
+}
+
+// Called by Google Identity Services after successful sign-in.
+function handleGoogleSignIn(response) {
+  _setToken(response.credential);
+  hideLoginOverlay();
+  initApp();
+}
+
+function signOut() {
+  _clearToken();
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.disableAutoSelect();
+  }
+  showLoginOverlay();
+  // Re-render the sign-in button
+  if (window.google && GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.startsWith('%%')) {
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleSignIn });
+    google.accounts.id.renderButton(document.getElementById('google-signin-btn'),
+      { theme: 'outline', size: 'large', shape: 'pill' });
+    google.accounts.id.prompt();
+  }
+}
+
+function initAuth() {
+  // If Google Client ID not configured, skip auth and init directly.
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.startsWith('%%')) {
+    hideLoginOverlay(); initApp(); return;
+  }
+  showLoginOverlay();
+  // If we already have a token, try using it — worker will 401 if expired.
+  if (_getToken()) { hideLoginOverlay(); initApp(); return; }
+  // Initialize Google Identity Services.
+  // GIS may not be loaded yet if the async script is still fetching.
+  function _initGIS() {
+    google.accounts.id.initialize({
+      client_id:   GOOGLE_CLIENT_ID,
+      callback:    handleGoogleSignIn,
+      auto_select: true,
+      context:     'signin',
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('google-signin-btn'),
+      { theme: 'outline', size: 'large', type: 'standard', shape: 'pill' }
+    );
+    google.accounts.id.prompt();
+  }
+  if (window.google && google.accounts) {
+    _initGIS();
+  } else {
+    // GIS script still loading — poll until ready.
+    const t = setInterval(() => {
+      if (window.google && google.accounts) { clearInterval(t); _initGIS(); }
+    }, 100);
+  }
+}
 
 /* ── THEME ─────────────────────────────────── */
 function toggleTheme(){
@@ -395,7 +494,7 @@ async function _syncProjectAction(action, project){
     return;
   }
   try{
-    const res = await fetch(PROJECTS_WEBHOOK_URL, {
+    const res = await authFetch(PROJECTS_WEBHOOK_URL, {
       method:  'POST',
       headers: {'Content-Type':'application/json','X-Webhook-Secret':PROJECTS_WEBHOOK_SECRET},
       body:    JSON.stringify({ action, project, ts: Date.now() })
@@ -450,7 +549,7 @@ async function syncProjectsFromSheets(){
   for(const url of urls){
     try{
       const sep=url.includes('?')?'&':'?';
-      const r=await fetch(url+sep+'_nc='+Date.now(),{cache:'no-store'});
+      const r=await authFetch(url+sep+'_nc='+Date.now(),{cache:'no-store'});
       if(!r.ok) continue;
       const d=await r.json();
       if(d.error) continue;
@@ -666,7 +765,7 @@ function buildDetail(){
     const threadDiv = de.querySelector('.slackthread');
     if (threadDiv) {
       const workerBase = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '');
-      fetch(`${workerBase}/slack-thread?channel=${encodeURIComponent(t.sc)}&ts=${encodeURIComponent(t.sts)}&txn_id=${encodeURIComponent(t.id)}`, {
+      authFetch(`${workerBase}/slack-thread?channel=${encodeURIComponent(t.sc)}&ts=${encodeURIComponent(t.sts)}&txn_id=${encodeURIComponent(t.id)}`, {
         headers: { 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
       })
       .then(r => r.json())
@@ -698,7 +797,7 @@ async function resend(id){
   if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 spin"></i> Sending...';}
   let success=false;
   try{
-    const r=await fetch(REMIND_WEBHOOK_URL,{
+    const r=await authFetch(REMIND_WEBHOOK_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json','X-Remind-Secret':REMIND_WEBHOOK_SECRET||''},
       body:JSON.stringify({txn_id:t.id,card_last4:t.c,merchant:t.m,amount:t.a})
@@ -741,7 +840,7 @@ async function markPending(id){
   updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
-    const r=await fetch(DASHBOARD_DATA_URL,{
+    const r=await authFetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
       headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
       body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
@@ -797,7 +896,7 @@ async function uploadReceipt(txnId, input) {
   toast('Checking…', 'Looking for existing receipt in Drive…', 'info');
   let existing = [];
   try {
-    const checkRes = await fetch(
+    const checkRes = await authFetch(
       `${uploadUrl}?txn_id=${encodeURIComponent(txnId)}`,
       { headers: { 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' } }
     );
@@ -823,7 +922,7 @@ async function _doReceiptUpload(txnId, filename, mimeType, b64, uploadUrl, repla
 
   toast('Uploading…', 'Sending receipt to Google Drive…', 'info');
   try {
-    const res = await fetch(uploadUrl, {
+    const res = await authFetch(uploadUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
       body: JSON.stringify({ txn_id: txnId, filename, mime_type: mimeType, data: b64, replace_file_id: replaceFileId || undefined }),
@@ -922,7 +1021,7 @@ async function removeReceipt(txnId) {
   if (!DASHBOARD_DATA_URL || DASHBOARD_DATA_URL.startsWith('%%')) return;
   const uploadUrl = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '') + '/upload-receipt';
   try {
-    const r = await fetch(uploadUrl, {
+    const r = await authFetch(uploadUrl, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
       body: JSON.stringify({ txn_id: txnId }),
@@ -958,7 +1057,7 @@ async function saveField(txnId, field, value, txField){
     const patches=[{txn_id:txnId, field, value}];
     if(t.st!==prevSt) patches.push({txn_id:txnId, field:'status', value:t.st});
     for(const p of patches){
-      const r=await fetch(DASHBOARD_DATA_URL,{
+      const r=await authFetch(DASHBOARD_DATA_URL,{
         method:'PATCH',
         headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
         body:JSON.stringify(p)
@@ -987,7 +1086,7 @@ async function markDone(id){
   // Write back to Google Sheets via Worker PATCH
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
-    const r=await fetch(DASHBOARD_DATA_URL,{
+    const r=await authFetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
       headers:{
         'Content-Type':'application/json',
@@ -1147,7 +1246,7 @@ async function doQBPush(){
   btn.disabled=true;
   btn.innerHTML='<i class="ti ti-loader spin" aria-hidden="true"></i> Pushing…';
   try{
-    const res=await fetch(QB_PUSH_URL,{
+    const res=await authFetch(QB_PUSH_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json','X-Webhook-Secret':QB_PUSH_SECRET},
       body:JSON.stringify({
@@ -1901,7 +2000,7 @@ async function pollN8nStatus(){
   if(!N8N_STATUS_URL||N8N_STATUS_URL.startsWith('%%')) return;
   let data;
   try{
-    const r=await fetch(N8N_STATUS_URL+'?_nc='+Date.now(),{cache:'no-store'});
+    const r=await authFetch(N8N_STATUS_URL+'?_nc='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('http '+r.status);
     data=await r.json();
   }catch(e){
@@ -1962,7 +2061,7 @@ async function loadDashboardData(silent=false){
   _loadInProgress=true;
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
-    const r=await fetch(DASHBOARD_DATA_URL+'?_nc='+Date.now(),{cache:'no-store'});
+    const r=await authFetch(DASHBOARD_DATA_URL+'?_nc='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(d.error){
@@ -1972,7 +2071,7 @@ async function loadDashboardData(silent=false){
 
     // Snapshot existing IDs BEFORE overwriting TX so we can detect truly new ones
     const prevTxIds = new Set(TX.map(t=>t.id));
-    const isFirstLoad = !_lastSyncTs;
+    const    const isFirstLoad = !_lastSyncTs;
 
     // Populate global TX, H, and PROJECTS, then re-render everything
     TX=d.transactions||[];
@@ -1991,14 +2090,11 @@ async function loadDashboardData(silent=false){
     buildRecent();
     buildAttention();
     if(PROJECTS.length) buildProjects();
-    if(selId) buildDetail(); // refresh detail panel with latest data
+    if(selId) buildDetail();
 
-    // Update overview dot label with sync time
     const ovLbl=document.getElementById('dot-overview-lbl');
     if(ovLbl&&d.syncTs) ovLbl.textContent='Live — last sync '+new Date(d.syncTs).toLocaleTimeString();
-    // workflow label is managed by pollN8nStatus — do not override here
 
-    // Detect new transactions and notify
     if(!isFirstLoad){
       const newTxns=TX.filter(t=>!prevTxIds.has(t.id));
       if(newTxns.length){
@@ -2018,45 +2114,47 @@ async function loadDashboardData(silent=false){
   }finally{
     _loadInProgress=false;
   }
-  // initCharts is outside the fetch try/catch so Chart.js errors surface
-  // clearly instead of being swallowed as "Could not reach Worker"
   try{ initCharts(); }catch(e){ console.error('initCharts failed:',e.message); }
 }
 
-// Poll for fresh data every 30 seconds
-setInterval(()=>loadDashboardData(true), 30*1000);
-
 // ─── INIT ────────────────────────────────────────────────────────────────────
-tick(); setInterval(tick,1000);
-updStats(); buildList(); buildRecent(); buildAttention();
-initSysStatus();
+// initApp() is called by initAuth() once a valid Google session is confirmed.
+function initApp(){
+  // Poll for fresh data every 30 seconds
+  setInterval(()=>loadDashboardData(true), 30*1000);
 
-// Load live transaction data from Cloudflare Worker → Google Sheets
-// initCharts() runs inside loadDashboardData() after data is available
-loadDashboardData(false);
-// Auto-sync projects from Sheets on load (silent — no toast on success)
-(async function initProjects(){
-  // Try dashboard-data /projects endpoint first, then PROJECTS_WEBHOOK_URL
-  const urls=[];
-  if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%'))
-    urls.push(DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '') + '/projects');
-  if(PROJECTS_WEBHOOK_URL&&!PROJECTS_WEBHOOK_URL.startsWith('%%'))
-    urls.push(PROJECTS_WEBHOOK_URL+'?action=list');
-  for(const url of urls){
-    try{
-      const sep=url.includes('?')?'&':'?';
-      const r=await fetch(url+sep+'_nc='+Date.now(),{cache:'no-store'});
-      if(!r.ok) continue;
-      const d=await r.json();
-      const list=d.projects||d.data||d;
-      if(Array.isArray(list)&&list.length){
-        PROJECTS=list.map(p=>typeof p==='string'?{name:p,active:true}:p);
-        buildProjects();
-        setSyncStatus('synced');
-        // Re-render detail panel so project dropdown gets populated
-        if(selId) buildDetail();
-        break;
-      }
-    }catch(e){}
-  }
-})();
+  tick(); setInterval(tick,1000);
+  updStats(); buildList(); buildRecent(); buildAttention();
+  initSysStatus();
+
+  // Load live transaction data from Cloudflare Worker → Google Sheets
+  loadDashboardData(false);
+
+  // Auto-sync projects from Sheets on load (silent — no toast on success)
+  (async function initProjects(){
+    const urls=[];
+    if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%'))
+      urls.push(DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '') + '/projects');
+    if(PROJECTS_WEBHOOK_URL&&!PROJECTS_WEBHOOK_URL.startsWith('%%'))
+      urls.push(PROJECTS_WEBHOOK_URL+'?action=list');
+    for(const url of urls){
+      try{
+        const sep=url.includes('?')?'&':'?';
+        const r=await authFetch(url+sep+'_nc='+Date.now(),{cache:'no-store'});
+        if(!r.ok) continue;
+        const d=await r.json();
+        const list=d.projects||d.data||d;
+        if(Array.isArray(list)&&list.length){
+          PROJECTS=list.map(p=>typeof p==='string'?{name:p,active:true}:p);
+          buildProjects();
+          setSyncStatus('synced');
+          if(selId) buildDetail();
+          break;
+        }
+      }catch(e){}
+    }
+  })();
+}
+
+// Start auth flow — shows login overlay or proceeds directly if token cached
+initAuth();
