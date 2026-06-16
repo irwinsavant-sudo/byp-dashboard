@@ -125,18 +125,15 @@ const SYNC_TS = '';
 // ── Runtime configuration — injected at build time by inject_secrets.js ──────
 // These PLACEHOLDER tokens are replaced with real values from .env.
 // Never commit real secrets to source control.
-const QB_PUSH_URL             = 'https://n8n-space.byp-app.workers.dev/webhook/qb-push';
-const QB_PUSH_SECRET          = '0ad2dbb851b04552f4bb3ec34a402abd833905fa66465753634204caa1e9eb9e';
-const SHEETS_URL              = 'https://docs.google.com/spreadsheets/d/1lM3WMabIbzWc9s5pWv9qkMBn5SVaCPe8AYKeHwxegUg/edit';
-const PROJECTS_WEBHOOK_URL    = 'https://n8n-space.byp-app.workers.dev/webhook/projects';
-const PROJECTS_WEBHOOK_SECRET = '61fffb85d3926299c5113f1e6a6cc10cde0092c18681ea6f7681132f0d411a17';
-const PROJECTS_SHEET_URL      = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0';
-const N8N_STATUS_URL          = 'https://n8n-space.byp-app.workers.dev/workflow-status';
-const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard-data';
-const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa';
-const REMIND_WEBHOOK_URL      = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';
-const REMIND_WEBHOOK_SECRET   = '868875f9c928fe2f139b5361f9e7059e86e938c3c3d970a61fb61750f45c6df8';
-const GOOGLE_CLIENT_ID        = '1058432089421-s8dgqcje9jj6un5ms9tfe7qsts99dc3u.apps.googleusercontent.com';
+// URLs only — no secrets. Secrets live in the Cloudflare Worker env vars.
+const QB_PUSH_URL          = 'https://n8n-space.byp-app.workers.dev/webhook/qb-push';
+const SHEETS_URL           = 'https://docs.google.com/spreadsheets/d/1lM3WMabIbzWc9s5pWv9qkMBn5SVaCPe8AYKeHwxegUg/edit';
+const PROJECTS_WEBHOOK_URL = 'https://n8n-space.byp-app.workers.dev/webhook/projects';
+const PROJECTS_SHEET_URL   = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18LhImIuulvayb40XaG-yy2PTOZ-hZbR6L4Y/edit?gid=0#gid=0';
+const N8N_STATUS_URL       = 'https://n8n-space.byp-app.workers.dev/workflow-status';
+const DASHBOARD_DATA_URL   = 'https://n8n-space.byp-app.workers.dev/dashboard-data';
+const REMIND_WEBHOOK_URL   = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';
+const GOOGLE_CLIENT_ID     = '1058432089421-s8dgqcje9jj6un5ms9tfe7qsts99dc3u.apps.googleusercontent.com';
 // DATA:WEBHOOK:END
 
 /* ── AUTH ──────────────────────────────────────────────────────────────────── */
@@ -496,7 +493,7 @@ async function _syncProjectAction(action, project){
   try{
     const res = await authFetch(PROJECTS_WEBHOOK_URL, {
       method:  'POST',
-      headers: {'Content-Type':'application/json','X-Webhook-Secret':PROJECTS_WEBHOOK_SECRET},
+      headers: {'Content-Type':'application/json'},
       body:    JSON.stringify({ action, project, ts: Date.now() })
     });
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -766,7 +763,6 @@ function buildDetail(){
     if (threadDiv) {
       const workerBase = DASHBOARD_DATA_URL.replace(/\/dashboard-data$/, '');
       authFetch(`${workerBase}/slack-thread?channel=${encodeURIComponent(t.sc)}&ts=${encodeURIComponent(t.sts)}&txn_id=${encodeURIComponent(t.id)}`, {
-        headers: { 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
       })
       .then(r => r.json())
       .then(data => {
@@ -799,7 +795,7 @@ async function resend(id){
   try{
     const r=await authFetch(REMIND_WEBHOOK_URL,{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Remind-Secret':REMIND_WEBHOOK_SECRET||''},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({txn_id:t.id,card_last4:t.c,merchant:t.m,amount:t.a})
     });
     let d={};
@@ -812,7 +808,7 @@ async function resend(id){
       if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
         fetch(DASHBOARD_DATA_URL,{
           method:'PATCH',
-          headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+          headers:{'Content-Type':'application/json','Content-Type':'application/json'},
           body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
         }).catch(()=>{});
       }
@@ -842,7 +838,7 @@ async function markPending(id){
   try{
     const r=await authFetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
-      headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
       body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
     });
     const d=await r.json();
@@ -898,7 +894,7 @@ async function uploadReceipt(txnId, input) {
   try {
     const checkRes = await authFetch(
       `${uploadUrl}?txn_id=${encodeURIComponent(txnId)}`,
-      { headers: { 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' } }
+      { headers: { 'Content-Type': 'application/json' } }
     );
     if (checkRes.ok) {
       const cd = await checkRes.json();
@@ -924,7 +920,7 @@ async function _doReceiptUpload(txnId, filename, mimeType, b64, uploadUrl, repla
   try {
     const res = await authFetch(uploadUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
+      headers: { 'Content-Type': 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({ txn_id: txnId, filename, mime_type: mimeType, data: b64, replace_file_id: replaceFileId || undefined }),
     });
     const d = await res.json();
@@ -1023,7 +1019,7 @@ async function removeReceipt(txnId) {
   try {
     const r = await authFetch(uploadUrl, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET || '' },
+      headers: { 'Content-Type': 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({ txn_id: txnId }),
     });
     const d = await r.json();
@@ -1059,7 +1055,7 @@ async function saveField(txnId, field, value, txField){
     for(const p of patches){
       const r=await authFetch(DASHBOARD_DATA_URL,{
         method:'PATCH',
-        headers:{'Content-Type':'application/json','X-Dashboard-Secret':DASHBOARD_WRITE_SECRET||''},
+        headers:{'Content-Type':'application/json','Content-Type':'application/json'},
         body:JSON.stringify(p)
       });
       const d=await r.json();
@@ -1088,10 +1084,7 @@ async function markDone(id){
   try{
     const r=await authFetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Dashboard-Secret': DASHBOARD_WRITE_SECRET||''
-      },
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({txn_id:t.id, field:'status', value:'complete'})
     });
     const d=await r.json();
@@ -1248,7 +1241,7 @@ async function doQBPush(){
   try{
     const res=await authFetch(QB_PUSH_URL,{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Webhook-Secret':QB_PUSH_SECRET},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         triggered_by:'dashboard',
         ts:Date.now(),
@@ -2158,3 +2151,4 @@ function initApp(){
 
 // Start auth flow — shows login overlay or proceeds directly if token cached
 initAuth();
+                                                                                                                                                                                                                                                                                                                                                           
