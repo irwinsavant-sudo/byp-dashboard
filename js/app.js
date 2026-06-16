@@ -808,7 +808,7 @@ async function resend(id){
       if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
         fetch(DASHBOARD_DATA_URL,{
           method:'PATCH',
-          headers:{'Content-Type':'application/json','Content-Type':'application/json'},
+          headers:{'Content-Type':'application/json'},
           body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
         }).catch(()=>{});
       }
@@ -838,7 +838,7 @@ async function markPending(id){
   try{
     const r=await authFetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
-      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
     });
     const d=await r.json();
@@ -920,7 +920,7 @@ async function _doReceiptUpload(txnId, filename, mimeType, b64, uploadUrl, repla
   try {
     const res = await authFetch(uploadUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ txn_id: txnId, filename, mime_type: mimeType, data: b64, replace_file_id: replaceFileId || undefined }),
     });
     const d = await res.json();
@@ -1019,7 +1019,7 @@ async function removeReceipt(txnId) {
   try {
     const r = await authFetch(uploadUrl, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ txn_id: txnId }),
     });
     const d = await r.json();
@@ -1055,7 +1055,7 @@ async function saveField(txnId, field, value, txField){
     for(const p of patches){
       const r=await authFetch(DASHBOARD_DATA_URL,{
         method:'PATCH',
-        headers:{'Content-Type':'application/json','Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify(p)
       });
       const d=await r.json();
@@ -2064,7 +2064,7 @@ async function loadDashboardData(silent=false){
 
     // Snapshot existing IDs BEFORE overwriting TX so we can detect truly new ones
     const prevTxIds = new Set(TX.map(t=>t.id));
-    const    const isFirstLoad = !_lastSyncTs;
+    const isFirstLoad = !_lastSyncTs;
 
     // Populate global TX, H, and PROJECTS, then re-render everything
     TX=d.transactions||[];
@@ -2151,4 +2151,4 @@ function initApp(){
 
 // Start auth flow — shows login overlay or proceeds directly if token cached
 initAuth();
-                                                                                                                                                                                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                                                                                                                                                                                              
