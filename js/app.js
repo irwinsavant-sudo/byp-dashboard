@@ -136,7 +136,7 @@ const DASHBOARD_DATA_URL      = 'https://n8n-space.byp-app.workers.dev/dashboard
 const DASHBOARD_WRITE_SECRET  = '7661896cef66df6230a1f68971495375dac5ca7d783e1356042b45a669d0eeaa';
 const REMIND_WEBHOOK_URL      = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';
 const REMIND_WEBHOOK_SECRET   = '868875f9c928fe2f139b5361f9e7059e86e938c3c3d970a61fb61750f45c6df8';
-const GOOGLE_CLIENT_ID        = '';
+const GOOGLE_CLIENT_ID        = '1058432089421-s8dgqcje9jj6un5ms9tfe7qsts99dc3u.apps.googleusercontent.com';
 // DATA:WEBHOOK:END
 
 /* ── AUTH ──────────────────────────────────────────────────────────────────── */
