@@ -2149,4 +2149,3 @@ function initApp(){
 
 // Start auth flow — shows login overlay or proceeds directly if token cached
 initAuth();
-                                                                                                                                                                 
