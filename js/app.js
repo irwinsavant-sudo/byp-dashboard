@@ -806,7 +806,7 @@ async function resend(id){
       t.st='notified';
       // PATCH GSheets asynchronously — don't block the UI
       if(DASHBOARD_DATA_URL&&!DASHBOARD_DATA_URL.startsWith('%%')){
-        fetch(DASHBOARD_DATA_URL,{
+        authFetch(DASHBOARD_DATA_URL,{
           method:'PATCH',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
