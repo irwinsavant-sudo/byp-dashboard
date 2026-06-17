@@ -133,7 +133,7 @@ const PROJECTS_SHEET_URL   = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18L
 const N8N_STATUS_URL       = 'https://n8n-space.byp-app.workers.dev/workflow-status';
 const DASHBOARD_DATA_URL   = 'https://n8n-space.byp-app.workers.dev/dashboard-data';
 const REMIND_WEBHOOK_URL   = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';
-const GOOGLE_CLIENT_ID     = '1058432089421-s8dgqcje9jj6un5ms9tfe7qsts99dc3u.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID     = '';
 // DATA:WEBHOOK:END
 
 /* ── AUTH ──────────────────────────────────────────────────────────────────── */
@@ -830,16 +830,14 @@ async function markPending(id){
   const t=TX.find(x=>x.id===id);
   if(!t||t.st==='pushed') return;
   const prev=t.st;
-  // Set to 'notified' (not 'pending') — the cardholder was already notified at least once,
-  // so "Resend to Slack" should appear, not "Notify via Slack".
-  t.st='notified';
+  t.st='pending';
   updStats();buildList();buildDetail();buildSheet();buildRecent();buildAttention();
   if(!DASHBOARD_DATA_URL||DASHBOARD_DATA_URL.startsWith('%%')) return;
   try{
     const r=await authFetch(DASHBOARD_DATA_URL,{
       method:'PATCH',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({txn_id:t.id,field:'status',value:'notified'})
+      body:JSON.stringify({txn_id:t.id,field:'status',value:'pending'})
     });
     const d=await r.json();
     if(!r.ok||d.error){
@@ -2151,3 +2149,4 @@ function initApp(){
 
 // Start auth flow — shows login overlay or proceeds directly if token cached
 initAuth();
+                                                                                                                                                                 
