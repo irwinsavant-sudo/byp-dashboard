@@ -133,7 +133,7 @@ const PROJECTS_SHEET_URL   = 'https://docs.google.com/spreadsheets/d/1SPZEQUF18L
 const N8N_STATUS_URL       = 'https://n8n-space.byp-app.workers.dev/workflow-status';
 const DASHBOARD_DATA_URL   = 'https://n8n-space.byp-app.workers.dev/dashboard-data';
 const REMIND_WEBHOOK_URL   = 'https://n8n-space.byp-app.workers.dev/webhook/remind-cardholder';
-const GOOGLE_CLIENT_ID     = '';
+const GOOGLE_CLIENT_ID     = '1058432089421-s8dgqcje9jj6un5ms9tfe7qsts99dc3u.apps.googleusercontent.com';
 // DATA:WEBHOOK:END
 
 /* ── AUTH ──────────────────────────────────────────────────────────────────── */
