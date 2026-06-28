@@ -615,7 +615,21 @@ function buildList(){
 }
 
 // ─── DETAIL ─────────────────────────────────────────────────────────────────
-function sel(id){selId=id;buildList();buildDetail();}
+function sel(id){
+  selId=id;
+  buildList();
+  buildDetail();
+  // On mobile, open detail as overlay
+  const dw=document.getElementById('detailwrap');
+  if(dw && window.innerWidth<=768){
+    dw.classList.add('mobile-open');
+    dw.scrollTop=0;
+  }
+}
+function closeMobileDetail(){
+  const dw=document.getElementById('detailwrap');
+  if(dw) dw.classList.remove('mobile-open');
+}
 function buildDetail(){
   const de=document.getElementById('detail');
   if(!selId){de.innerHTML='<div class="dempty"><i class="ti ti-cursor-text"></i><span>Select a transaction</span></div>';return;}
