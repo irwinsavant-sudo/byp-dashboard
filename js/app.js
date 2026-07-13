@@ -2125,8 +2125,8 @@ async function loadDashboardData(silent=false){
 // ─── INIT ────────────────────────────────────────────────────────────────────
 // initApp() is called by initAuth() once a valid Google session is confirmed.
 function initApp(){
-  // Poll for fresh data every 30 seconds
-  setInterval(()=>loadDashboardData(true), 30*1000);
+  // Poll for fresh data every 5 minutes (reduce GSheets quota usage)
+  setInterval(()=>loadDashboardData(true), 5*60*1000);
 
   tick(); setInterval(tick,1000);
   updStats(); buildList(); buildRecent(); buildAttention();
