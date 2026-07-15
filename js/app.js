@@ -194,7 +194,7 @@ function signOut() {
   showLoginOverlay();
   // Re-render the sign-in button
   if (window.google && GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.startsWith('%%')) {
-    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleSignIn });
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleSignIn, use_fedcm_for_prompt: false });
     google.accounts.id.renderButton(document.getElementById('google-signin-btn'),
       { theme: 'outline', size: 'large', shape: 'pill' });
     google.accounts.id.prompt();
@@ -213,10 +213,11 @@ function initAuth() {
   // GIS may not be loaded yet if the async script is still fetching.
   function _initGIS() {
     google.accounts.id.initialize({
-      client_id:   GOOGLE_CLIENT_ID,
-      callback:    handleGoogleSignIn,
-      auto_select: true,
-      context:     'signin',
+      client_id:             GOOGLE_CLIENT_ID,
+      callback:              handleGoogleSignIn,
+      auto_select:           true,
+      context:               'signin',
+      use_fedcm_for_prompt:  false,   // avoid COOP/postMessage block
     });
     google.accounts.id.renderButton(
       document.getElementById('google-signin-btn'),
